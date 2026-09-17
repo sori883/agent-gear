@@ -30,3 +30,13 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Bun / TypeScript development
+node_modules/
+*.tsbuildinfo
+coverage/
+
+# macOS metadata
+.DS_Store
+
+# dist/ and bun.lock are versioned distribution artifacts and lockfiles.
