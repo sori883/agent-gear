@@ -1,0 +1,3 @@
+interface:
+  display_name: "TypeScript Advanced Types"
+  short_description: "Type-safe APIs, generics, narrowing, and type tests"
