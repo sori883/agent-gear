@@ -1,6 +1,6 @@
 # frontmatterの定義
 
-これは、このプロジェクトで決めたOKF文書のプロファイルである。5種類の `type` や `title`・`description` の必須化を、OKF全体の制約とは扱わない。スキル自体の `SKILL.md` は別形式なので、この表を適用しない。
+このスキルが扱うOKF文書のプロファイルを定義する。5種類の `type` や `title`・`description` の必須化を、OKF全体の制約とは扱わない。
 
 ## 項目
 

@@ -1,0 +1,8 @@
+{
+  "name": "@agent-gear/okf-agent-memory",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "minisearch": "7.2.0"
+  }
+}

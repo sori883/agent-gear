@@ -32,19 +32,21 @@ OKF v0.2のMarkdown文書をプロジェクトの永続記憶として管理す�
 
 OKFの操作にはBun CLIのみを使用する。MCPツールやMCPサーバーは使用しない。
 
-`$OKF_CLI` に、この `SKILL.md` と同じディレクトリにある `scripts/okf.ts` の絶対パスを設定する。`$OKF_BUNDLE` には対象bundleの絶対パスを設定する。作業ディレクトリは利用先プロジェクトのルートを維持し、スキルの配置先へ移動しない。
+初回は [CLIのセットアップ](references/cli.md) に従って、スキルの配置先で `bun install` を実行する。
+
+`$OKF_CLI` に、この `SKILL.md` と同じディレクトリにある `scripts/okf.ts` の絶対パスを設定する。`$OKF_BUNDLE` には対象bundleの絶対パスを設定する。作業ディレクトリは利用先プロジェクトのルートを維持し、スキルの配置先へ移動しない。新しいbundleは `bun "$OKF_CLI" init "$OKF_BUNDLE" --json` で初期化する。
 
 | 操作 | コマンド |
 | --- | --- |
 | 知識を検索 | `bun "$OKF_CLI" search "検索語" "$OKF_BUNDLE" --limit 3 --json` |
-| コードに適用される文書を検索 | `bun "$OKF_CLI" search --for-path "src/auth/" "$OKF_BUNDLE" --json` |
+| コードに適用される文書を検索 | `bun "$OKF_CLI" search --for-path "src/auth/" "$OKF_BUNDLE" --limit 100 --json` |
 | 文書を取得 | `bun "$OKF_CLI" show "concept-id" "$OKF_BUNDLE" --json` |
 | 文書を作成 | `bun "$OKF_CLI" create "concept-id" "$OKF_BUNDLE" --type "type" --title "題名" --desc "説明1文" --actor "agent:codex" --json` |
 | 文書を更新 | `bun "$OKF_CLI" update "concept-id" "$OKF_BUNDLE" --desc "更新した説明1文" --actor "agent:codex" --json` |
 | 文書を関連付け | `bun "$OKF_CLI" relate "source-id" "target-id" "$OKF_BUNDLE" --desc "関係の説明" --actor "agent:codex" --json` |
 | bundleを検証 | `bun "$OKF_CLI" validate "$OKF_BUNDLE" --strict --drift --json` |
 
-`concept-id` はbundle内の相対パスから `.md` を除いた値。`type` は [frontmatterの定義](references/frontmatter.md) から選び、`--actor` は実際の作成主体に合わせる。本文は `--body` で渡す。追加のメタデータ入力は `create --help` / `update --help` の対応するオプションを使う。
+`concept-id` はbundle内の相対パスから `.md` を除いた値。`type` は [frontmatterの定義](references/frontmatter.md) から選び、`--actor` は実際の作成主体に合わせる。本文は `--body` または `--body-file`、追加のメタデータは `--metadata-file` で渡す。入力形式・終了コード・復旧方法は [CLIの詳細](references/cli.md) を参照する。
 
 知識の操作にはこのCLIを使い、Markdownの直接編集や手動検証へ切り替えない。コマンドが失敗したら、原因と書き込み済みの範囲を確認する。CLIが起動できない場合は、失敗を報告して知識操作を止め、保存・検証に成功したことにはしない。
 
@@ -60,5 +62,3 @@ OKFの操作にはBun CLIのみを使用する。MCPツールやMCPサーバー�
 | 既存知識を訂正・更新・廃止する | [更新・矛盾の扱い](references/update.md) |
 | 文書同士をつなぐ | [関連付け](references/relationships.md) |
 | 一連の使い方を確認する | [操作例](references/examples.md) |
-
-スキル自体を保守するときは [参照元と変更範囲](references/upstream.md) を読む。

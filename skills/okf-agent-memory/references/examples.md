@@ -5,7 +5,7 @@
 ## 既存の制約を調べる
 
 ```sh
-bun "$OKF_CLI" search --for-path "src/auth/" "$OKF_BUNDLE" --json
+bun "$OKF_CLI" search --for-path "src/auth/" "$OKF_BUNDLE" --limit 100 --json
 bun "$OKF_CLI" search "認証 テスト" "$OKF_BUNDLE" --limit 3 --json
 bun "$OKF_CLI" show "rules/auth-tests" "$OKF_BUNDLE" --json
 ```
@@ -32,7 +32,7 @@ bun "$OKF_CLI" create "decisions/auth-test-scope" "$OKF_BUNDLE" \
 bun "$OKF_CLI" show "decisions/auth-test-scope" "$OKF_BUNDLE" --json
 ```
 
-決定の根拠に参照可能な資料があれば、frontmatter入力の対応オプションで `sources` も設定する。実際に確認していない資料や、人間の `verified` は追加しない。
+決定の根拠に参照可能な資料があれば、[CLIの詳細](cli.md) の `--metadata-file` で `sources` も設定する。実際に確認していない資料や、人間の `verified` は追加しない。
 
 ## 関連付けて検証する
 
