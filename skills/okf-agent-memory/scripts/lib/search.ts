@@ -40,7 +40,8 @@ function result(b: Bundle, c: Concept, score: number, matched_on: string[]): Sea
   }
   return r;
 }
-export function search(b: Bundle, query: string, limit = 10): SearchResult[] {
+// Scope filtering and result limits belong to the caller, after all candidates are scored.
+function keywordResults(b: Bundle, query: string): SearchResult[] {
   const terms = tokens([...query].slice(0, 1000).join("")).slice(0, 50);
   if (!terms.length || !b.concepts.size) return [];
   const index = new MiniSearch<SearchDocument>({
@@ -52,11 +53,13 @@ export function search(b: Bundle, query: string, limit = 10): SearchResult[] {
     id: c.id, title: field(c.metadata.title), tags: strings(c.metadata.tags).join(" "),
     description: field(c.metadata.description), body: c.body,
   })));
-  const results = index.search(query, { tokenize: () => terms }).map(hit => {
+  return index.search(query, { tokenize: () => terms }).map(hit => {
     const matched = new Set(Object.values(hit.match).flat());
     return result(b, b.concepts.get(hit.id)!, hit.score, fields.filter(name => matched.has(name)));
   });
-  return results.sort((a, b) => b.score - a.score || compare(a.concept_id, b.concept_id)).slice(0, boundedLimit(limit));
+}
+export function search(b: Bundle, query: string, limit = 10): SearchResult[] {
+  return keywordResults(b, query).sort((a, b) => b.score - a.score || compare(a.concept_id, b.concept_id)).slice(0, boundedLimit(limit));
 }
 
 // Preserve upstream matching, including absolute-path suffixes and its single-** semantics.
@@ -79,7 +82,7 @@ export function matchCodeRef(ref: string, target: string): boolean {
 export function searchForPath(b: Bundle, target: string, query = "", limit = 10): SearchResult[] {
   target = target.trim();
   if (!target) return search(b, query, limit);
-  const textResults = new Map(search(b, query, b.concepts.size).map(r => [r.concept_id, r]));
+  const textResults = new Map(keywordResults(b, query).map(r => [r.concept_id, r]));
   const results: SearchResult[] = [];
   for (const c of b.concepts.values()) {
     const matchedRef = strings(c.metadata.code_refs).find(ref => matchCodeRef(ref, target));

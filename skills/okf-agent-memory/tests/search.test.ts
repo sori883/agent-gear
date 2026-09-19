@@ -106,6 +106,39 @@ test("path ranking preserves holds even when query only matches contextual docum
   expect(result[2]?.matched_on).toEqual(["code_refs", "description"]);
   expect(searchForPath(corpus(), "src/unrelated.js", "auth")).toEqual([]);
 });
+test.each([100, 101, 150])("path search preserves keyword scores and matches across %i matching documents", count => {
+  const b = documents(Array.from({ length: count }, (_, i) => ({
+    id: `knowledge/${String(i).padStart(3, "0")}`, title: "認証ルール",
+  })));
+  const target = [...b.concepts.values()].at(-1)!;
+  target.metadata.code_refs = ["src/target.ts"];
+  // Identical titles have the same keyword score in this corpus, including the last document.
+  const keywords = search(b, "ルール", 1000);
+  expect(keywords).toHaveLength(Math.min(count, 100));
+  const baseline = searchForPath(b, "src/target.ts", "", 1)[0]!;
+  const hits = searchForPath(b, "src/target.ts", "ルール", 1);
+  expect(hits).toHaveLength(1);
+  expect(hits[0]).toMatchObject({ concept_id: target.id, matched_on: ["code_refs", "title"] });
+  expect(keywords[0]!.score).toBeGreaterThan(0);
+  expect(hits[0]!.score).toBeCloseTo(baseline.score + keywords[0]!.score, 2);
+});
+test("path search ranks all applicable keyword matches before limiting results and keeps holds first", () => {
+  const b = documents([
+    ...Array.from({ length: 100 }, (_, i) => ({ id: `knowledge/a-${i}`, title: "認証ルール" })),
+    { id: "knowledge/b-unmatched", title: "画像" },
+    { id: "knowledge/z-matched", title: "認証ルール" },
+    { id: "rules/freeze", title: "承認待ち" },
+  ]);
+  for (const id of ["knowledge/b-unmatched", "knowledge/z-matched", "rules/freeze"]) {
+    b.concepts.get(id)!.metadata.code_refs = ["src/target.ts"];
+  }
+  b.concepts.get("rules/freeze")!.metadata.governance = "hold";
+  expect(search(b, "ルール", 1000).some(r => r.concept_id === "knowledge/z-matched")).toBe(false);
+  const hits = searchForPath(b, "src/target.ts", "ルール", 2);
+  expect(hits.map(r => r.concept_id)).toEqual(["rules/freeze", "knowledge/z-matched"]);
+  expect(hits[0]!.matched_on).toEqual(["code_refs"]);
+  expect(hits[1]!.matched_on).toEqual(["code_refs", "title"]);
+});
 test.each([
   ["src/auth", "src/auth/login.ts", true], ["src/auth/", "src/auth/login.ts", true],
   ["src/auth", "src/authentication/a.ts", false], ["src/**/*.ts", "src/login.ts", true],
@@ -118,10 +151,13 @@ test("ties are lexically stable independent of insertion order and limits are bo
   b.concepts.clear();
   for (let i = 120; i >= 0; i--) {
     const id = `knowledge/${String(i).padStart(3, "0")}`;
-    b.concepts.set(id, { id, path: `${id}.md`, raw: "", body: "", metadata: { type: "knowledge", title: "Equal", description: "Same." } });
+    b.concepts.set(id, { id, path: `${id}.md`, raw: "", body: "", metadata: { type: "knowledge", title: "Equal", description: "Same.", code_refs: ["src/target.ts"] } });
   }
   expect(search(b, "equal", 1000)).toHaveLength(100);
   expect(search(b, "equal", 0)).toHaveLength(10);
   expect(search(b, "equal", 2).map(r => r.concept_id)).toEqual(["knowledge/000", "knowledge/001"]);
   expect(search(b, "equal", 1)[0]?.governance).toBe("context");
+  expect(searchForPath(b, "src/target.ts", "equal", 1000)).toHaveLength(100);
+  expect(searchForPath(b, "src/target.ts", "equal", 0)).toHaveLength(10);
+  expect(searchForPath(b, "src/target.ts", "equal", 2).map(r => r.concept_id)).toEqual(["knowledge/000", "knowledge/001"]);
 });
