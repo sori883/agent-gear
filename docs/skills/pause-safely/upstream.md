@@ -1,10 +1,10 @@
-# pause-safelyの参照元とローカライズ
+# checkpoint-safelyの参照元とローカライズ
 
 確認日：2026-09-20
 
-Cursorのpstackにある [Pause safely](https://github.com/cursor/plugins/blob/032be146865d973682535de75f2287da438550bf/pstack/skills/poteto-mode/playbooks/pause-safely.md) を、日本語の独立したスキルとして導入する。参照コミットは `032be146865d973682535de75f2287da438550bf`。
+Cursorのpstackにある [Pause safely](https://github.com/cursor/plugins/blob/032be146865d973682535de75f2287da438550bf/pstack/skills/poteto-mode/playbooks/pause-safely.md) を、日本語の独立した `checkpoint-safely` スキルとして導入する。参照コミットは `032be146865d973682535de75f2287da438550bf`。
 
-元の [MITライセンス](https://github.com/cursor/plugins/blob/032be146865d973682535de75f2287da438550bf/pstack/LICENSE) は、配布対象の [LICENSE](../../../skills/pause-safely/LICENSE) に同梱する。スキル本体は [SKILL.md](../../../skills/pause-safely/SKILL.md)。この文書は開発者向けの保守資料として配布対象から分離する。
+元の [MITライセンス](https://github.com/cursor/plugins/blob/032be146865d973682535de75f2287da438550bf/pstack/LICENSE) は、配布対象の [LICENSE](../../../skills/checkpoint-safely/LICENSE) に同梱する。スキル本体は [SKILL.md](../../../skills/checkpoint-safely/SKILL.md)。この文書は開発者向けの保守資料として配布対象から分離する。
 
 ## 継承した動作
 
@@ -19,8 +19,8 @@ Cursorのpstackにある [Pause safely](https://github.com/cursor/plugins/blob/0
 
 | 項目 | 変更内容 |
 | --- | --- |
-| 配置・言語 | playbookの一節を `skills/pause-safely/SKILL.md` に独立させ、日本語で起動条件と手順を記述する |
-| 保存先 | `/tmp/<slug>-resume.md` の例を、プロジェクト内の `.space/checkpoint/<task-id>.md` に変更する。タスク単位のMarkdownとしてGitで永続化し、OKFの検索・検証対象から分ける |
+| 配置・言語 | playbookの一節を `skills/checkpoint-safely/SKILL.md` に独立させ、日本語で起動条件と手順を記述する |
+| 保存先 | `/tmp/<slug>-resume.md` の例を、プロジェクト内の `.space/checkpoint/<slug>-resume.md` に変更する。タスク単位のMarkdownとしてGitで永続化し、OKFの検索・検証対象から分ける |
 | 手順の順序 | checkpointも同じWIPコミットへ含めるため、記録の作成をコミットより先に行う。記録にはコミット前のHEADを残し、作成したコミットIDは保存後の報告に含める |
 | 保存と中断 | 「保存して続けて」やコンテキスト縮約に備えた記録では、中断を推定せず、保存後に作業を継続する |
 | 未コミット変更 | 他者・別タスクの変更と既存のステージ内容を保護する。分離が難しい場合はディスク上に保持し、コミットできなかった範囲を報告する |
