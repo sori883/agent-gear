@@ -33,6 +33,55 @@ function documents(entries: { id: string; title?: string; description?: string; 
   return b;
 }
 
+test("type-only discovery includes rules without keywords or code refs and orders governance before IDs", () => {
+  const b = corpus();
+  const general = b.concepts.get("rules/auth")!;
+  delete general.metadata.code_refs;
+  general.metadata.status = "deprecated";
+  b.graph.set(general.id, ["knowledge/auth"]);
+  const hits = search(b, "", 100, "rule");
+  expect(hits.map(r => r.concept_id)).toEqual(["rules/freeze", "rules/auth"]);
+  expect(hits.every(r => r.type === "rule" && r.score === 0 && r.matched_on.join() === "type")).toBe(true);
+  expect(hits[1]).toMatchObject({ governance: "constraint", outbound: ["knowledge/auth"] });
+  expect(search(b, "  ", 100, "rule")).toEqual(hits);
+  b.concepts = new Map([...b.concepts].reverse());
+  expect(search(b, "", 100, "rule")).toEqual(hits);
+  expect(search(b, "", 100, "decision")).toEqual([]);
+  expect(search(documents([]), "", 100, "rule")).toEqual([]);
+  expect(search(b, "")).toEqual([]);
+});
+
+test("type matches frontmatter exactly, independent of directory names or keywords", () => {
+  const b = documents([{ id: "rules/example", title: "rule" }]);
+  expect(search(b, "", 100, "rule")).toEqual([]);
+  expect(search(b, "rule", 100, "rule")).toEqual([]);
+  expect(search(b, "", 100, "knowledge").map(r => r.concept_id)).toEqual(["rules/example"]);
+});
+
+test("type filtering precedes limits while retaining keyword relevance and path holds", () => {
+  const b = corpus();
+  for (let i = 0; i < 120; i++) {
+    const id = `knowledge/${i}`;
+    b.concepts.set(id, { ...b.concepts.get("rules/freeze")!, id, metadata: { type: "knowledge", title: "security", governance: "hold", code_refs: ["src/auth/login.ts"] } });
+  }
+  for (const c of b.concepts.values()) c.metadata.title = "needle";
+  expect(search(b, "needle", 100).every(r => r.type === "knowledge")).toBe(true);
+  const rules = search(b, "needle", 100, "rule");
+  expect(new Set(rules.map(r => r.concept_id))).toEqual(new Set(["rules/auth", "rules/freeze"]));
+  expect(search(b, "needle", 1, "rule")).toEqual(rules.slice(0, 1));
+  expect(search(b, "", 1, "rule")[0]?.concept_id).toBe("rules/freeze");
+  expect(search(b, "nonexistent", 100, "rule")).toEqual([]);
+  expect(search(b, "の は を", 100, "rule")).toEqual([]);
+  const unfiltered = search(corpus(), "auth", 100).find(r => r.type === "rule")!;
+  expect(search(corpus(), "auth", 1, "rule")).toEqual([{ ...unfiltered, matched_on: [...unfiltered.matched_on, "type"] }]);
+  const hits = searchForPath(b, "src/auth/login.ts", "overview", 100, "rule");
+  expect(hits.map(r => r.concept_id)).toEqual(["rules/freeze", "rules/auth"]);
+  expect(hits[0]).toMatchObject({ governance: "hold", matched_on: ["code_refs", "type"] });
+  expect(searchForPath(b, "src/auth/login.ts", "overview", 1, "rule")).toEqual(hits.slice(0, 1));
+  expect(searchForPath(b, "src/unrelated.js", "auth", 100, "rule")).toEqual([]);
+  expect(searchForPath(b, "", "", 100, "rule")).toEqual(search(b, "", 100, "rule"));
+});
+
 test("Japanese words inside titles, descriptions, tags, IDs and bodies are searchable", () => {
   const b = documents([
     { id: "rules/auth-guard", title: "認証変更の保留ルール" },
@@ -157,7 +206,28 @@ test("ties are lexically stable independent of insertion order and limits are bo
   expect(search(b, "equal", 0)).toHaveLength(10);
   expect(search(b, "equal", 2).map(r => r.concept_id)).toEqual(["knowledge/000", "knowledge/001"]);
   expect(search(b, "equal", 1)[0]?.governance).toBe("context");
+  expect(search(b, "", 1000, "knowledge")).toHaveLength(100);
+  expect(search(b, "", 0, "knowledge")).toHaveLength(10);
+  expect(search(b, "", 2, "knowledge").map(r => r.concept_id)).toEqual(["knowledge/000", "knowledge/001"]);
   expect(searchForPath(b, "src/target.ts", "equal", 1000)).toHaveLength(100);
   expect(searchForPath(b, "src/target.ts", "equal", 0)).toHaveLength(10);
   expect(searchForPath(b, "src/target.ts", "equal", 2).map(r => r.concept_id)).toEqual(["knowledge/000", "knowledge/001"]);
+});
+
+test("an explicit unbounded limit returns every type, keyword and path match beyond 100", () => {
+  const b = documents(Array.from({ length: 125 }, (_, i) => ({ id: `rules/${String(i).padStart(3, "0")}`, title: "認証ルール", description: `認証を変更するときに適用する条件${i}。` })));
+  for (const c of b.concepts.values()) {
+    c.metadata.type = "rule";
+    c.metadata.code_refs = ["src/auth.ts"];
+  }
+  b.concepts.set("knowledge/other", { id: "knowledge/other", path: "knowledge/other.md", raw: "", body: "", metadata: { type: "knowledge", title: "認証ルール", code_refs: ["src/auth.ts"] } });
+  const all = search(b, "", Infinity, "rule");
+  expect(all).toHaveLength(125);
+  expect(all.at(-1)).toMatchObject({ concept_id: "rules/124", description: "認証を変更するときに適用する条件124。", matched_on: ["type"] });
+  expect(search(b, "認証", Infinity, "rule")).toHaveLength(125);
+  expect(search(b, "認証", Infinity)).toHaveLength(126);
+  expect(searchForPath(b, "src/auth.ts", "認証", Infinity, "rule")).toHaveLength(125);
+  expect(searchForPath(b, "src/auth.ts", "", Infinity)).toHaveLength(126);
+  expect(search(b, "", 1000, "rule")).toEqual(all.slice(0, 100));
+  expect(search(b, "", 10, "rule")).toEqual(all.slice(0, 10));
 });

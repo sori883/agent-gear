@@ -1,6 +1,6 @@
 import { readdir, readFile } from "node:fs/promises";
 import { join, posix } from "node:path";
-import { parseDocument, serializeDocument, TYPE_DIRECTORIES, validateMetadata } from "./document.ts";
+import { isActor, parseDocument, serializeDocument, TYPE_DIRECTORIES, validateMetadata } from "./document.ts";
 import type { Document, Metadata } from "./document.ts";
 import { applyChanges, conceptID, optionalRead, rootPath, safePath, withLock } from "./files.ts";
 import type { FileChange } from "./files.ts";
@@ -22,16 +22,40 @@ export function stripFences(text: string): string {
       return "";
     }
     return fence ? "" : line;
-  }).join("\n").replace(/<!--[^]*?-->/g, comment => comment.replace(/[^\n]/g, ""));
+  }).join("\n").replace(/<!--[^]*?-->/g, comment => comment.replace(/[^\n]/g, " "));
 }
-export function links(text: string): { href: string; line: string }[] {
-  const result: { href: string; line: string }[] = [];
-  for (const line of stripFences(text).split("\n")) {
-    for (const m of line.replace(/`[^`]*`/g, "").matchAll(/(?<!!)\[(?:\\.|[^\]\\])*\]\(<?([^\s>]+?\.md(?:[?#][^\s>)]*)?)>?(?:\s+"[^"]*")?\)/g)) {
-      if (!/^[a-z][\w+.-]*:/i.test(m[1]!) && !m[1]!.startsWith("//")) result.push({ href: m[1]!, line });
+const escapedAt = (text: string, offset: number) => (text.slice(0, offset).match(/\\+$/)?.[0].length ?? 0) % 2 === 1;
+function maskInlineCode(line: string): string {
+  const runs = [...line.matchAll(/`+/g)];
+  let masked = line;
+  for (let i = 0; i < runs.length; i++) {
+    const start = runs[i]!;
+    if (escapedAt(line, start.index)) continue;
+    const endIndex = runs.findIndex((run, index) => index > i && run[0].length === start[0].length);
+    if (endIndex < 0) continue;
+    const end = runs[endIndex]!, until = end.index + end[0].length;
+    masked = masked.slice(0, start.index) + " ".repeat(until - start.index) + masked.slice(until);
+    i = endIndex;
+  }
+  return masked;
+}
+interface LinkSpan { href: string; label: string; line: string; lineNumber: number; start: number; end: number }
+function linkSpans(text: string): LinkSpan[] {
+  const result: LinkSpan[] = [], original = text.split("\n");
+  for (const [lineNumber, line] of stripFences(text).split("\n").entries()) {
+    // Mask inline examples without moving the offsets used when removing links.
+    const visible = maskInlineCode(line);
+    for (const m of visible.matchAll(/(?<!!)\[((?:\\.|[^\]\\])*)\]\(<?([^\s>]+?\.md(?:[?#][^\s>)]*)?)>?(?:\s+"[^"]*")?\)/g)) {
+      if (!escapedAt(visible, m.index) && !/^[a-z][\w+.-]*:/i.test(m[2]!) && !m[2]!.startsWith("//")) result.push({
+        href: m[2]!, label: original[lineNumber]!.slice(m.index + 1, m.index + 1 + m[1]!.length),
+        line, lineNumber, start: m.index, end: m.index + m[0].length,
+      });
     }
   }
   return result;
+}
+export function links(text: string): { href: string; line: string }[] {
+  return linkSpans(text).map(({ href, line }) => ({ href, line }));
 }
 export function resolveLink(source: string, href: string): string {
   let clean = href.split(/[?#]/)[0]!;
@@ -205,6 +229,109 @@ export async function relateConcepts(path: string, source: string, target: strin
       body = lines.join("\n");
     } else body = s.body.trimEnd() + "\n\n# Related Concepts\n" + line + "\n";
     await save(root, sourceID, s.metadata, body, sourceRaw, options, "Relationship");
+  });
+}
+
+function inlineCode(value: string): string {
+  const delimiter = "`".repeat(Math.max(0, ...[...value.matchAll(/`+/g)].map(m => m[0].length)) + 1);
+  return delimiter + (/^`|`$/.test(value) ? ` ${value} ` : value) + delimiter;
+}
+
+function unlinkConcept(text: string, source: string, target: string, mode: "concept" | "index" | "log"): string {
+  const matches = linkSpans(text).filter(link => resolveLink(source, link.href) === target);
+  if (!matches.length) return text;
+  const parts = text.split(/(?<=\n)/), visible = stripFences(text).split("\n");
+  const removedLines = new Set<number>();
+  let related = false;
+  for (let i = 0; i < parts.length; i++) {
+    if (/^# /.test(visible[i] ?? "")) related = /^# Related(?: Concepts)?\s*$/.test(visible[i]!);
+    const lineMatches = matches.filter(link => link.lineNumber === i);
+    if (!lineMatches.length) continue;
+    const line = parts[i]!, first = lineMatches[0]!;
+    // Only remove whole list entries in navigation or CLI relation sections.
+    // Prose and entries with other links keep their text and remaining links.
+    const remainder = line.slice(first.end);
+    if ((mode === "index" || mode === "concept" && related) && lineMatches.length === 1 &&
+      /^\s*[-*] +$/.test(line.slice(0, first.start)) && !/\[[^]*\]\(/.test(remainder)) {
+      parts[i] = "";
+      removedLines.add(i);
+    } else {
+      let changed = line;
+      for (const link of lineMatches.toReversed()) {
+        const replacement = link.label + (mode === "log" ? ` (${inlineCode(target)})` : "");
+        changed = changed.slice(0, link.start) + replacement + changed.slice(link.end);
+      }
+      parts[i] = changed;
+    }
+  }
+  if (mode === "concept") {
+    for (let i = 0; i < parts.length; i++) {
+      if (!/^# Related(?: Concepts)?\s*$/.test(visible[i] ?? "")) continue;
+      let end = i + 1;
+      while (end < parts.length && !/^# /.test(visible[end] ?? "")) end++;
+      if ([...removedLines].some(line => line > i && line < end) && !parts.slice(i + 1, end).join("").trim()) {
+        let start = i;
+        while (start > 0 && !parts[start - 1]!.trim()) start--;
+        for (let j = start; j < end; j++) parts[j] = "";
+      }
+    }
+  }
+  return parts.join("");
+}
+
+export interface DeleteOptions { actor?: string; now?: Date; dryRun?: boolean }
+export interface DeleteResult {
+  concept_id: string; path: string; updated_concepts: string[]; changed_paths: string[];
+  removed_relations: { source: string; target: string }[]; new_orphans: string[];
+}
+export async function deleteConcept(path: string, input: string, options: DeleteOptions = {}): Promise<DeleteResult> {
+  const id = conceptID(input), root = await rootPath(path);
+  const actor = options.actor ?? "agent/cli", now = options.now ?? new Date();
+  if (!isActor(actor)) throw new Error("actor must be an actor identifier, such as agent:codex.");
+  return withLock(root, async () => {
+    const b = await loadBundle(root), target = b.concepts.get(id);
+    if (!target) throw new Error(`Concept not found: ${id}`);
+    const plan = new Map<string, FileChange>(), updated: string[] = [];
+    for (const c of b.concepts.values()) {
+      if (c.id === id) continue;
+      if (c.parseError) throw new Error(`Cannot inspect references in ${c.path}: ${c.parseError}`);
+      const body = unlinkConcept(c.body, c.path, id, "concept");
+      if (body === c.body) continue;
+      const metadata = { ...c.metadata, generated: { by: actor, at: now.toISOString() } };
+      const { errors } = validateMetadata(metadata, now);
+      if (errors.length) throw new Error(`${c.path}: ${errors.join("\n")}`);
+      plan.set(c.path, { relative: c.path, before: c.raw, after: serializeDocument({ metadata, body }) });
+      updated.push(c.id);
+    }
+    for (const [relative, before] of b.indexes) {
+      const after = unlinkConcept(before, relative, id, "index");
+      if (after !== before) plan.set(relative, { relative, before, after });
+    }
+    for (const [relative, before] of b.logs) {
+      const after = unlinkConcept(before, relative, id, "log");
+      if (after !== before) plan.set(relative, { relative, before, after });
+    }
+    updated.sort(compare);
+    const removed = [...b.graph].flatMap(([source, targets]) => targets
+      .filter(destination => source === id || destination === id).map(destination => ({ source, target: destination })))
+      .sort((a, z) => compare(a.source, z.source) || compare(a.target, z.target));
+    const newOrphans = b.concepts.size - 1 > 1 ? [...b.concepts.keys()].filter(key => key !== id && !b.orphans.includes(key) &&
+      !b.graph.get(key)!.some(next => next !== id) && !b.inbound.get(key)!.some(previous => previous !== id)).sort(compare) : [];
+    await planLog(root, plan,
+      `**Deletion**: ${inlineCode(id)} (${escapeText(target.metadata.title ?? id)}); actor: ${escapeText(actor)}; at: ${now.toISOString()}; unlinked concepts: ${updated.map(inlineCode).join(", ") || "none"}.`,
+      { actor, now });
+    const result: DeleteResult = {
+      concept_id: id, path: target.path, updated_concepts: updated,
+      changed_paths: [...plan.keys(), target.path].sort(compare), removed_relations: removed, new_orphans: newOrphans,
+    };
+    if (!options.dryRun) {
+      // Record success only after the target was actually removed. Partial
+      // failures retain written_paths, including an already deleted target.
+      const log = plan.get("log.md")!;
+      plan.delete("log.md");
+      await applyChanges(root, [...plan.values(), { relative: target.path, before: target.raw, after: null }, log]);
+    }
+    return result;
   });
 }
 
