@@ -20,6 +20,26 @@ async function success(args: string[]) {
 }
 const create = (id: string, type = "knowledge") => success(["create", id, "--type", type, "--title", "Auth", "--desc", "Explains auth.", "--actor", "agent:codex"]);
 
+test("CLI previews and deletes a concept with relations, indexes and a deletion log", async () => {
+  const bundle = join(project, "custom bundle");
+  await success(["init", bundle]);
+  for (const id of ["knowledge/source", "knowledge/target"]) {
+    await success(["create", id, bundle, "--type", "knowledge", "--title", "Example", "--desc", "Example concept."]);
+  }
+  await success(["relate", "knowledge/source", "knowledge/target", bundle, "--desc", "Reason"]);
+  expect(await success(["delete", "knowledge/target", bundle, "--dry-run"])).toMatchObject({ status: "preview", concept_id: "knowledge/target", updated_concepts: ["knowledge/source"] });
+  expect(await success(["show", "knowledge/target", bundle])).toMatchObject({ id: "knowledge/target" });
+  expect(await success(["delete", "knowledge/target", bundle, "--actor", "human:tester"])).toMatchObject({ status: "success", concept_id: "knowledge/target" });
+  expect(await success(["validate", bundle, "--strict", "--drift"])).toMatchObject({ gate_passed: true, concept_count: 1 });
+  expect((await success(["search", "--type", "knowledge", bundle, "--all"])).map((r: { concept_id: string }) => r.concept_id)).toEqual(["knowledge/source"]);
+  expect(await readFile(join(bundle, "log.md"), "utf8")).toContain("human:tester");
+  const missing = await run(["delete", "knowledge/target", bundle, "--json"]);
+  expect(missing.code).toBe(1);
+  expect(JSON.parse(missing.stdout)).toMatchObject({ status: "error" });
+  for (const flag of ["--no-log", "--no-index"]) expect((await run(["delete", "knowledge/source", bundle, flag])).code).toBe(1);
+  expect((await run(["delete", "--help"])).stdout).toContain("--dry-run");
+});
+
 test("CLI completes default-bundle workflow with provenance, graph and strict validation", async () => {
   expect(await success(["init"])).toMatchObject({ status: "success" });
   expect(await create("knowledge/auth")).toMatchObject({ concept_id: "knowledge/auth", path: "knowledge/auth.md" });
@@ -79,6 +99,41 @@ test("body-file and YAML metadata work without shell interpolation; empty body i
   await success(["update", "knowledge/file", "--body", ""]);
   expect((await success(["show", "knowledge/file"])).body).toBe("");
 });
+test("CLI lists every supported type without keywords and lets callers retrieve the discovered rule", async () => {
+  await success(["init"]);
+  for (const [type, directory] of [["rule", "rules"], ["principle", "principles"], ["knowledge", "knowledge"], ["procedure", "procedures"], ["decision", "decisions"]]) {
+    await create(`${directory}/example`, type);
+  }
+  for (const [type, directory] of [["rule", "rules"], ["principle", "principles"], ["knowledge", "knowledge"], ["procedure", "procedures"], ["decision", "decisions"]]) {
+    const hits = await success(["search", "--type", type!]);
+    expect(hits).toHaveLength(1);
+    expect(hits[0]).toMatchObject({ concept_id: `${directory}/example`, type, matched_on: ["type"] });
+  }
+  const rules = await success(["search", "--type", "rule", ".space/babel", "--limit", "100"]);
+  expect(await success(["show", rules[0].concept_id])).toMatchObject({ type: "rule", title: "Auth" });
+  expect(await success(["search", "Auth", "--type", "rule"])).toHaveLength(1);
+  expect(await success(["search", "unmatched", "--type", "rule"])).toEqual([]);
+});
+test("CLI combines type with explicit bundles, keywords and path discovery", async () => {
+  const bundle = join(project, "custom bundle");
+  await success(["init", bundle]);
+  await writeFile(join(project, "meta.json"), JSON.stringify({ type: "rule", title: "Freeze", description: "Wait for review.", governance: "hold", code_refs: ["src/**"] }));
+  await success(["create", "rules/freeze", bundle, "--metadata-file", "meta.json"]);
+  await success(["create", "knowledge/overview", bundle, "--type", "knowledge", "--title", "Overview", "--desc", "Auth."]);
+  expect(await success(["search", "--type", "rule", bundle])).toHaveLength(1);
+  expect(await success(["search", "Freeze", bundle, "--type", "rule"])).toHaveLength(1);
+  expect(await success(["search", "", bundle, "--type", "rule"])).toHaveLength(1);
+  const pathArgs = ["--type", "rule", "--for-path", "src/auth.ts"];
+  expect((await success(["search", bundle, ...pathArgs]))[0]).toMatchObject({ concept_id: "rules/freeze", governance: "hold" });
+  expect((await success(["search", "Overview", bundle, ...pathArgs]))[0]).toMatchObject({ concept_id: "rules/freeze", matched_on: ["code_refs", "type"] });
+  expect((await run(["search", "", "missing-bundle", "--type", "rule", "--json"])).code).toBe(2);
+  for (const type of ["rules", "RULE", "", "unknown", "toString"]) {
+    const result = await run(["search", "--type", type, "--json"]);
+    expect(result.code).toBe(1);
+    expect(JSON.parse(result.stdout)).toMatchObject({ status: "error", error: expect.stringContaining("--type") });
+  }
+  expect((await run(["search", "--help"])).stdout).toContain("--type");
+});
 test("strict warnings, invalid input and bundle loading have meaningful exit codes and JSON errors", async () => {
   expect((await run(["validate", "absent", "--json"])).code).toBe(2);
   await success(["init"]);
@@ -95,7 +150,30 @@ test("strict warnings, invalid input and bundle loading have meaningful exit cod
     expect((await run(args)).code).toBe(1);
   }
 });
-test.each(["init", "search", "show", "create", "update", "relate", "validate"])("%s help has usable options", async command => {
+test("CLI --all discovers more than 100 rules with descriptions before callers choose a body", async () => {
+  await success(["init"]);
+  for (let i = 0; i < 105; i++) {
+    await writeFile(join(project, `.space/babel/rules/${String(i).padStart(3, "0")}.md`), `---\ntype: rule\ntitle: Rule ${i}\ndescription: 認証を変更するときに適用する条件${i}。\ncode_refs: [src/auth.ts]\n---\n本文${i}\n`);
+  }
+  await create("knowledge/other");
+  const hits = await success(["search", "--type", "rule", "--all"]);
+  expect(hits).toHaveLength(105);
+  expect(hits.at(-1)).toMatchObject({ concept_id: "rules/104", description: "認証を変更するときに適用する条件104。" });
+  expect(hits.every((hit: Record<string, unknown>) => hit.body === undefined)).toBe(true);
+  expect(await success(["show", hits.at(-1).concept_id])).toMatchObject({ body: "本文104\n" });
+  expect(await success(["search", "認証", ".space/babel", "--type", "rule", "--all"])).toHaveLength(105);
+  expect(await success(["search", "--type", "rule", "--for-path", "src/auth.ts", ".space/babel", "--all"])).toHaveLength(105);
+  expect(await success(["search", "--type", "rule", "--limit", "1000"])).toHaveLength(100);
+  expect(await success(["search", "--type", "rule"])).toHaveLength(10);
+  const plain = await run(["search", "--type", "rule", "--all"]);
+  expect(plain.code).toBe(0);
+  expect(plain.stdout).toContain("認証を変更するときに適用する条件104。");
+  const conflict = await run(["search", "--type", "rule", "--all", "--limit", "100", "--json"]);
+  expect(conflict.code).toBe(1);
+  expect(JSON.parse(conflict.stdout).error).toContain("--all and --limit");
+  expect((await run(["search", "--all"])).code).toBe(1);
+});
+test.each(["init", "search", "show", "create", "update", "delete", "relate", "validate"])("%s help has usable options", async command => {
   const help = await run([command, "--help"]);
   expect(help.code).toBe(0);
   expect(help.stdout).toContain(`okf ${command}`);
@@ -120,4 +198,14 @@ test("distributed skill runs offline with its installed dependency outside this 
   expect(hits.stderr).toBe("");
   expect(hits.code).toBe(0);
   expect(JSON.parse(hits.stdout)[0]).toMatchObject({ concept_id: "rules/example", matched_on: ["title"] });
+  const rules = await run(["search", "--type", "rule", "portable", "--all", "--json"], copied);
+  expect(rules.code).toBe(0);
+  expect(JSON.parse(rules.stdout)[0]).toMatchObject({ concept_id: "rules/example", matched_on: ["type"] });
+  const preview = await run(["delete", "rules/example", "portable", "--dry-run", "--json"], copied);
+  expect(preview.code).toBe(0);
+  expect(JSON.parse(preview.stdout)).toMatchObject({ status: "preview", concept_id: "rules/example" });
+  const deletion = await run(["delete", "rules/example", "portable", "--json"], copied);
+  expect(deletion.code).toBe(0);
+  expect(await Bun.file(join(project, "portable/rules/example.md")).exists()).toBe(false);
+  expect(JSON.parse((await run(["validate", "portable", "--strict", "--drift", "--json"], copied)).stdout)).toMatchObject({ gate_passed: true, concept_count: 0 });
 });

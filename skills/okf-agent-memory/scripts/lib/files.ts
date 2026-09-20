@@ -40,6 +40,7 @@ export async function optionalRead(root: string, relative: string): Promise<stri
   catch (error) { if (hasCode(error, "ENOENT")) return undefined; throw error; }
 }
 export interface FileChange { relative: string; before?: string; after: string }
+export interface FileDeletion { relative: string; before: string; after: null }
 export class WriteError extends Error {
   constructor(cause: unknown, public readonly writtenPaths: string[]) {
     super(`${cause instanceof Error ? cause.message : String(cause)}; files already written: ${writtenPaths.join(", ") || "none"}`, { cause });
@@ -48,7 +49,7 @@ export class WriteError extends Error {
 
 // Preflight every path before any file changes. Each replacement is atomic; the
 // group is not a crash-proof transaction. Callers must report partial failures.
-export async function applyChanges(root: string, changes: FileChange[]): Promise<void> {
+export async function applyChanges(root: string, changes: (FileChange | FileDeletion)[]): Promise<void> {
   const writtenPaths: string[] = [];
   try {
     for (const change of changes) {
@@ -56,7 +57,13 @@ export async function applyChanges(root: string, changes: FileChange[]): Promise
     }
     for (const change of changes) {
       if (change.before === change.after) continue;
-      const target = await safePath(root, change.relative, true);
+      const target = await safePath(root, change.relative, change.after !== null);
+      if (change.after === null) {
+        if (await optionalRead(root, change.relative) !== change.before) throw new Error(`File changed during operation: ${change.relative}`);
+        await unlink(target);
+        writtenPaths.push(change.relative);
+        continue;
+      }
       const temporary = join(dirname(target), `.okf-${crypto.randomUUID()}.tmp`);
       try {
         const mode = change.before === undefined ? 0o644 : (await lstat(target)).mode & 0o777;

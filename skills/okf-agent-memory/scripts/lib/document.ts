@@ -1,6 +1,7 @@
 import { YAML } from "bun";
 
 export const TYPE_DIRECTORIES = { rule: "rules", principle: "principles", knowledge: "knowledge", procedure: "procedures", decision: "decisions" } as const;
+export type ConceptType = keyof typeof TYPE_DIRECTORIES;
 export type Metadata = Record<string, unknown>;
 export interface Document { metadata: Metadata; body: string }
 export const isRecord = (value: unknown): value is Metadata => value !== null && typeof value === "object" && !Array.isArray(value);

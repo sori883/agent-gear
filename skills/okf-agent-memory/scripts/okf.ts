@@ -3,9 +3,9 @@ import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import type { ParseArgsConfig } from "node:util";
-import { conceptJSON, createConcept, initBundle, loadBundle, relateConcepts, updateConcept } from "./lib/bundle.ts";
-import { isRecord, nonempty, parseDocument } from "./lib/document.ts";
-import type { Metadata } from "./lib/document.ts";
+import { conceptJSON, createConcept, deleteConcept, initBundle, loadBundle, relateConcepts, updateConcept } from "./lib/bundle.ts";
+import { isRecord, nonempty, parseDocument, TYPE_DIRECTORIES } from "./lib/document.ts";
+import type { ConceptType, Metadata } from "./lib/document.ts";
 import { conceptID, WriteError } from "./lib/files.ts";
 import { search, searchForPath } from "./lib/search.ts";
 import { validate } from "./lib/validate.ts";
@@ -17,16 +17,18 @@ const common = { json: boolean, help: { ...boolean, short: "h" } };
 const mutation = { actor: string, "no-log": boolean, "no-index": boolean };
 const content = { type: string, title: string, desc: string, body: string, tags: string, status: string, "body-file": string, "metadata-file": string };
 const commands: Record<string, NonNullable<ParseArgsConfig["options"]>> = {
-  init: {}, search: { limit: string, "for-path": string }, show: { raw: boolean },
+  init: {}, search: { limit: string, all: boolean, "for-path": string, type: string }, show: { raw: boolean },
   create: { ...mutation, ...content }, update: { ...mutation, ...content, unset: { ...string, multiple: true }, sync: boolean },
+  delete: { actor: string, "dry-run": boolean },
   relate: { ...mutation, desc: string }, validate: { strict: boolean, drift: boolean, stale: boolean }, version: {},
 };
 const usages: Record<string, string> = {
   init: "okf init [bundle]",
-  search: "okf search <query> [bundle]\n  okf search --for-path <path> [bundle]\n  okf search <query> [bundle] --for-path <path>",
+  search: "okf search <query> [bundle] [--type <type>]\n  okf search --type <type> [bundle]\n  okf search --for-path <path> [bundle] [--type <type>]\n  okf search <query> [bundle] --for-path <path> [--type <type>]",
   show: "okf show <concept-id> [bundle]",
   create: "okf create <concept-id> [bundle] --type <type> --title <title> --desc <summary>",
   update: "okf update <concept-id> [bundle] [changes]",
+  delete: "okf delete <concept-id> [bundle] [--dry-run]",
   relate: "okf relate <source-id> <target-id> [bundle] --desc <relationship>",
   validate: "okf validate [bundle]", version: "okf version",
 };
@@ -34,15 +36,17 @@ const descriptions: Record<string, string> = {
   json: "Emit JSON (errors also use JSON on stdout).", help: "Show command help.",
   actor: "Actor identifier; default agent/cli. Sets generated.by with the actual current time.",
   "no-log": "Skip log.md bookkeeping.", "no-index": "Skip index.md bookkeeping.",
-  type: "rule | principle | knowledge | procedure | decision; must match the ID directory.",
+  type: "rule | principle | knowledge | procedure | decision. Search filters frontmatter (query optional); writes require a matching ID directory.",
   title: "Nonempty title.", desc: "Nonempty single-line summary or relationship description.",
   body: "Markdown body; an empty string clears it on update.", "body-file": "Read Markdown body verbatim from a UTF-8 file (exclusive with --body).",
   tags: "Comma-separated tags; an empty string clears them.", status: "draft | stable | deprecated.",
   "metadata-file": "JSON/YAML mapping (or Markdown frontmatter); flags override its fields. generated is automatic.",
   unset: "Remove a metadata key on update; repeatable. Cannot remove generated or required fields.",
   sync: "Repair indexes and missing log references even when content is unchanged; preserve generated.",
+  "dry-run": "Preview deletion, affected files, removed relations and new orphans without writing content.",
   limit: "Number of search results; default 10, maximum 100; <=0 uses the default.",
-  "for-path": "Match code_refs; rank hold, constraint, context. Use --limit 100 for scope review.",
+  all: "Return every matching document, without a result limit. Exclusive with --limit.",
+  "for-path": "Match code_refs; rank hold, constraint, context. Use --all for scope review.",
   raw: "Return original Markdown bytes, exclusive with --json.", strict: "Fail on any error, warning, legacy finding, broken link or orphan.",
   drift: "Check index summaries and code_refs against the current working directory.", stale: "Fail if a review deadline has expired, even without --strict.",
 };
@@ -98,14 +102,17 @@ export async function main(args: string[]): Promise<number> {
       await initBundle(path, opts);
       output({ status: "success", bundle_path: resolve(path) }, `Initialized OKF 0.2 bundle: ${path}\n`, json);
     } else if (command === "search") {
-      count(positionals, v["for-path"] ? 0 : 1, 2, command);
-      const limit = v.limit === undefined ? 10 : Number(v.limit);
-      if (!Number.isSafeInteger(limit)) throw new Error("--limit must be an integer.");
+      if (v.type !== undefined && (typeof v.type !== "string" || !Object.hasOwn(TYPE_DIRECTORIES, v.type))) throw new Error(`--type must be one of: ${Object.keys(TYPE_DIRECTORIES).join(", ")}.`);
+      const type = v.type as ConceptType | undefined;
+      count(positionals, v["for-path"] || type ? 0 : 1, 2, command);
+      if (v.all && v.limit !== undefined) throw new Error("--all and --limit are mutually exclusive.");
+      const limit = v.all ? Infinity : v.limit === undefined ? 10 : Number(v.limit);
+      if (!v.all && !Number.isSafeInteger(limit)) throw new Error("--limit must be an integer.");
       let query = positionals[0] ?? "", path = positionals[1] ?? DEFAULT_BUNDLE;
-      if (v["for-path"] && positionals.length === 1 && await stat(positionals[0]!).then(s => s.isDirectory(), () => false)) { path = positionals[0]!; query = ""; }
-      if (!query.trim() && !v["for-path"]) throw new Error("search requires a nonempty query or --for-path.");
+      if ((v["for-path"] || type) && positionals.length === 1 && await stat(positionals[0]!).then(s => s.isDirectory(), () => false)) { path = positionals[0]!; query = ""; }
+      if (!query.trim() && !v["for-path"] && !type) throw new Error("search requires a nonempty query, --for-path or --type.");
       const b = await load(path);
-      const results = typeof v["for-path"] === "string" ? searchForPath(b, v["for-path"], query, limit) : search(b, query, limit);
+      const results = typeof v["for-path"] === "string" ? searchForPath(b, v["for-path"], query, limit, type) : search(b, query, limit, type);
       output(results, results.map(r => `${r.concept_id} [${r.governance}] (${r.score}) ${r.title}\n  ${r.description}`).join("\n") + "\n", json);
     } else if (command === "show") {
       count(positionals, 1, 2, command);
@@ -124,6 +131,11 @@ export async function main(args: string[]): Promise<number> {
       const m = await metadata(v);
       const c = command === "create" ? await createConcept(path, id, m, body, opts) : await updateConcept(path, id, m, body, opts);
       output({ status: "success", concept_id: c.id, path: c.path }, `${command === "create" ? "Created" : "Updated"}: ${c.path}\n`, json);
+    } else if (command === "delete") {
+      count(positionals, 1, 2, command);
+      const result = await deleteConcept(positionals[1] ?? DEFAULT_BUNDLE, positionals[0]!, { actor: opts.actor, dryRun: v["dry-run"] === true });
+      output({ status: v["dry-run"] ? "preview" : "success", ...result },
+        `${v["dry-run"] ? "Would delete" : "Deleted"}: ${result.path}\nChanged files:\n${result.changed_paths.map(path => `- ${path}\n`).join("")}Unlinked concepts: ${result.updated_concepts.join(", ") || "(none)"}\nNew orphans: ${result.new_orphans.join(", ") || "(none)"}\n`, json);
     } else if (command === "relate") {
       count(positionals, 2, 3, command);
       if (!nonempty(v.desc)) throw new Error("relate requires --desc with a relationship description.");

@@ -5,12 +5,15 @@
 ## 既存の制約を調べる
 
 ```sh
-bun "$OKF_CLI" search --for-path "src/auth/" "$OKF_BUNDLE" --limit 100 --json
-bun "$OKF_CLI" search "認証 テスト" "$OKF_BUNDLE" --limit 3 --json
+bun "$OKF_CLI" search --type rule "$OKF_BUNDLE" --all --json
+bun "$OKF_CLI" search --type principle "$OKF_BUNDLE" --all --json
+# descriptionが作業に合致する文書のIDを指定する
 bun "$OKF_CLI" show "rules/auth-tests" "$OKF_BUNDLE" --json
+bun "$OKF_CLI" search --for-path "src/auth/" "$OKF_BUNDLE" --all --json
+bun "$OKF_CLI" search "認証 テスト" "$OKF_BUNDLE" --limit 3 --json
 ```
 
-パス検索の結果から保留と制約を確認し、話題検索では候補の説明を読んで必要な文書だけ取得する。実際の検索結果にないIDを推測して使わない。
+ルール・原則は全件のdescriptionを確認して合致する文書を選び、その本文だけを取得する。適用判断が曖昧な文書も本文を読む。パス検索の結果から保留と制約を確認し、話題検索で過去の判断を補う。実際の検索結果にないIDを推測して使わない。
 
 ## 決定を記録する
 
@@ -48,3 +51,15 @@ bun "$OKF_CLI" validate "$OKF_BUNDLE" --strict --drift --json
 ```
 
 保存結果、目次・履歴の同期、検証のエラー・警告が0件であることを確認して完了とする。
+
+## 文書を削除する
+
+ユーザーが `rules/auth-tests` の削除を依頼した場合の例。
+
+```sh
+bun "$OKF_CLI" delete "rules/auth-tests" "$OKF_BUNDLE" --dry-run --json
+bun "$OKF_CLI" delete "rules/auth-tests" "$OKF_BUNDLE" --actor 'agent:codex' --json
+bun "$OKF_CLI" validate "$OKF_BUNDLE" --strict --drift --json
+```
+
+対象ファイル、対象への関連リンク、目次の掲載を削除し、履歴を記録する。通常の文章中のリンクは表示文字を残す。削除で新たに孤立した文書は `new_orphans` に表示されるため、削除結果とstrict検証の成否を分けて確認する。

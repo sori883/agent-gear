@@ -39,14 +39,23 @@ OKFの操作にはBun CLIのみを使用する。MCPツールやMCPサーバー�
 | 操作 | コマンド |
 | --- | --- |
 | 知識を検索 | `bun "$OKF_CLI" search "検索語" "$OKF_BUNDLE" --limit 3 --json` |
-| コードに適用される文書を検索 | `bun "$OKF_CLI" search --for-path "src/auth/" "$OKF_BUNDLE" --limit 100 --json` |
+| 種類を絞って検索 | `bun "$OKF_CLI" search "検索語" "$OKF_BUNDLE" --type principle --limit 3 --json` |
+| ルールを全件取得 | `bun "$OKF_CLI" search --type rule "$OKF_BUNDLE" --all --json` |
+| 原則を全件取得 | `bun "$OKF_CLI" search --type principle "$OKF_BUNDLE" --all --json` |
+| コードに適用される文書を検索 | `bun "$OKF_CLI" search --for-path "src/auth/" "$OKF_BUNDLE" --all --json` |
 | 文書を取得 | `bun "$OKF_CLI" show "concept-id" "$OKF_BUNDLE" --json` |
 | 文書を作成 | `bun "$OKF_CLI" create "concept-id" "$OKF_BUNDLE" --type "type" --title "題名" --desc "説明1文" --actor "agent:codex" --json` |
 | 文書を更新 | `bun "$OKF_CLI" update "concept-id" "$OKF_BUNDLE" --desc "更新した説明1文" --actor "agent:codex" --json` |
+| 削除の影響を確認 | `bun "$OKF_CLI" delete "concept-id" "$OKF_BUNDLE" --dry-run --json` |
+| 文書と関連リンクを削除 | `bun "$OKF_CLI" delete "concept-id" "$OKF_BUNDLE" --actor "agent:codex" --json` |
 | 文書を関連付け | `bun "$OKF_CLI" relate "source-id" "target-id" "$OKF_BUNDLE" --desc "関係の説明" --actor "agent:codex" --json` |
 | bundleを検証 | `bun "$OKF_CLI" validate "$OKF_BUNDLE" --strict --drift --json` |
 
 `concept-id` はbundle内の相対パスから `.md` を除いた値。`type` は [frontmatterの定義](references/frontmatter.md) から選び、`--actor` は実際の作成主体に合わせる。本文は `--body` または `--body-file`、追加のメタデータは `--metadata-file` で渡す。入力形式・終了コード・復旧方法は [CLIの詳細](references/cli.md) を参照する。
+
+物理削除が依頼されている場合は `delete` を使う。対象ファイル、関連リンク、目次を整理し、削除の履歴を残す。`--dry-run` で変更対象と新たな孤立文書を確認できる。廃止と物理削除の選び方、削除後の検証は [更新・削除の扱い](references/update.md) に従う。
+
+ルールの取得は `search --type rule --all` で全件のdescriptionを確認し、作業に合致する文書の `concept_id` を選んで `show` に渡す。原則を調べる場合も `search --type principle --all` で同じ手順を使う。適用するか判断しづらい文書は本文を確認する。typeは文書の種類であり、守るべき制約・保留かどうかは本文と `governance` で確認する。
 
 知識の操作にはこのCLIを使い、Markdownの直接編集や手動検証へ切り替えない。コマンドが失敗したら、原因と書き込み済みの範囲を確認する。CLIが起動できない場合は、失敗を報告して知識操作を止め、保存・検証に成功したことにはしない。
 
