@@ -2,7 +2,7 @@
 type: principle
 title: 必要な情報に絞ってコンテキストを保つ
 description: 大量の出力・長い文書・反復した読み込み・並行作業で情報が増えるとき、必要な情報に絞り、主担当には根拠へ戻れる要点を集める。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: guard-the-context-window"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.657Z
+  at: 2026-09-20T12:35:55.682Z
 ---
 # 必要な情報に絞ってコンテキストを保つ
 
@@ -19,7 +19,7 @@ generated:
 
 大量の出力・長い文書・反復した読み込み・並行作業により、保持する情報が増えるとき。
 
-## 守ること
+## 判断の指針
 
 保持できる文脈には限りがあるため、今の判断に使う情報を優先する。
 

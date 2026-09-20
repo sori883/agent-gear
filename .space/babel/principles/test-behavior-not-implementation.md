@@ -2,7 +2,7 @@
 type: principle
 title: 内部実装より観測できる振る舞いをテストする
 description: テストを追加・変更するときや既存テストを残すか判断するとき、利用者と同じ入口から処理を動かし、独立した期待値と観測できる結果を比較する。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: test-behavior-not-implementation"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.925Z
+  at: 2026-09-20T12:35:56.557Z
 ---
 # 内部実装より観測できる振る舞いをテストする
 
@@ -19,7 +19,7 @@ generated:
 
 テストを追加・変更するとき、既存テストを残すか判断するとき。
 
-## 守ること
+## 判断の指針
 
 テスト対象を具体的な入力で実行し、利用者が観測できる出力や副作用を、対象の実装から独立した期待値と比較する。
 

@@ -11,7 +11,7 @@ sources:
     title: "pstack: migrate-callers-then-delete-legacy-apis"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.722Z
+  at: 2026-09-20T12:35:56.835Z
 ---
 # 呼び出し元を移行して旧APIを取り除く
 
@@ -19,7 +19,7 @@ generated:
 
 新しい内部APIを採用し、外部利用者への後方互換が不要で、呼び出し元をまとめて変更できるとき。
 
-## 守ること
+## 判断の指針
 
 内部の呼び出し元が残っていることだけを理由に、旧APIを維持しない。新しい設計へ移行する改修の中で、呼び出し元と旧APIを一緒に整理する。
 

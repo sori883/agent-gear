@@ -2,7 +2,7 @@
 type: principle
 title: 成果物の実際の動作を確かめる
 description: 作業の完了を報告するときや他の担当者の成果を受け入れるとき、実際の成果物・値・動作を確認し、間接的な指標や自己申告だけを成功の根拠にしない。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: prove-it-works"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.821Z
+  at: 2026-09-20T12:35:56.296Z
 ---
 # 成果物の実際の動作を確かめる
 
@@ -19,7 +19,7 @@ generated:
 
 作業を完了として報告するとき、他の担当者やエージェントの成果を受け入れるとき。
 
-## 守ること
+## 判断の指針
 
 「何を確認すれば実際に動くと証明できるか」を決め、その対象を直接確かめる。更新時刻、古い画像、派生状態、作業者の完了報告だけで正しさを推定しない。
 

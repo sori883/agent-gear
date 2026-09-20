@@ -2,7 +2,7 @@
 type: principle
 title: 修正が繰り返し失敗したら前提を疑う
 description: 同じ前提を共有する修正が同じ検証で2回以上失敗したら、前提と偏りの所在を調べてから次の修正へ進む。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: attack-the-premise"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.333Z
+  at: 2026-09-20T12:35:55.303Z
 ---
 # 修正が繰り返し失敗したら前提を疑う
 
@@ -19,7 +19,7 @@ generated:
 
 同じ前提を共有する2つ以上の修正が、同じ検証条件を満たせなかったとき。
 
-## 守ること
+## 判断の指針
 
 失敗した修正が共通して仮定していたことを、一文で書き出す。その前提を保ったまま次の対症療法を追加しない。
 

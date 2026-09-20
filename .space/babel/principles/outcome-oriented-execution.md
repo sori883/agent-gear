@@ -2,7 +2,7 @@
 type: principle
 title: 検証できる最終状態へ向けて移行する
 description: 段階と検証の区切りを明示した書き換え・移行を行うとき、目標の構造へ収束させ、一時的な不整合を作業単位の終わりで解消する。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: outcome-oriented-execution"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.802Z
+  at: 2026-09-20T12:35:56.140Z
 ---
 # 検証できる最終状態へ向けて移行する
 
@@ -19,7 +19,7 @@ generated:
 
 段階と検証の区切りを明示した、計画的な書き換えや移行を行うとき。
 
-## 守ること
+## 判断の指針
 
 途中の状態をすべて滑らかに見せるための使い捨ての互換コードを増やさず、意図した最終状態の整合性を優先する。
 

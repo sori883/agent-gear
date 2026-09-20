@@ -2,7 +2,7 @@
 type: principle
 title: 新しい要件を前提に設計し直す
 description: 既存設計へ新しい要件を組み込むとき、その要件が最初から存在した場合の構造を考えて段階的に反映する。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: redesign-from-first-principles"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.839Z
+  at: 2026-09-20T12:35:56.357Z
 ---
 # 新しい要件を前提に設計し直す
 
@@ -19,7 +19,7 @@ generated:
 
 既存の設計へ、新しい要件や前提を組み込むとき。
 
-## 守ること
+## 判断の指針
 
 既存の構造へ処理を継ぎ足す前に、「この要件を最初から知っていたら何を作るか」を考える。
 

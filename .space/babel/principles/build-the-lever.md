@@ -2,7 +2,7 @@
 type: principle
 title: 作業や検証を再実行できる道具を作る
 description: 自明な少数の編集を超える編集・移行・分析・検証を行うとき、同じ作業や確認を再実行できる最小の道具を作る。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: build-the-lever"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.386Z
+  at: 2026-09-20T12:35:55.413Z
 ---
 # 作業や検証を再実行できる道具を作る
 
@@ -19,7 +19,7 @@ generated:
 
 一目で確認できる少数の自明な編集を超える、編集・移行・分析・検証を行うとき。
 
-## 守ること
+## 判断の指針
 
 作業を人手で繰り返す代わりに、作業そのもの、または結果を検証する道具を作る。反復回数だけでなく、他者が再確認できる価値で判断する。
 

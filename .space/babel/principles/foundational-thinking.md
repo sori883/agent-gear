@@ -2,7 +2,7 @@
 type: principle
 title: ロジックより先にデータと基盤を整える
 description: 中心となる型・データ構造・共有状態や基盤と機能の順序を決めるとき、ロジックの前にデータとアクセス方法を整える。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: foundational-thinking"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.631Z
+  at: 2026-09-20T12:35:55.616Z
 ---
 # ロジックより先にデータと基盤を整える
 
@@ -19,7 +19,7 @@ generated:
 
 中心となる型やデータ構造を決めるとき、基盤と機能の順序を決めるとき、状態を共有するとき。
 
-## 守ること
+## 判断の指針
 
 主要な型を早期に定義し、データの読み書きの経路を追って、よく使う操作に合う構造を選ぶ。構造の判断では将来の変更余地を守り、個々のコードでは単純さを守る。
 

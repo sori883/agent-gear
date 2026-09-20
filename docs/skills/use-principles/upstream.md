@@ -7,7 +7,8 @@ Cursorのpstack、参照コミット `032be146865d973682535de75f2287da438550bf` 
 ## 配置と責務
 
 - `.space/babel/principles/` に原則を1件ずつ、計23件保存する。IDは原文の `principle-` を除いた名前に揃える。
-- 各原則は `type: principle`、`governance: constraint` とし、原文への固定リンクを `sources` に残す。descriptionに適用場面と守る内容を記し、本文には詳細な適用条件と例外を保持する。
+- 各原則は `type: principle`、`governance: context` とし、原文への固定リンクを `sources` に残す。descriptionに参照する場面と判断の指針を記し、本文には詳細な適用条件と例外を保持する。
+- `.space/babel/rules/` に追加するルールは `type: rule`、`governance: constraint` を明示する。具体的に守る行動・禁止事項・承認条件を記し、原則の本文を複製しない。
 - 各原則はtype検索とdescriptionから選んで参照する。適用手順を重複して記すルール文書や、場面と参照先の対応表は同梱しない。
 - [運用スキル](../../../skills/use-principles/SKILL.md)に、読み込み、作業別の進め方、委譲時の責任、検証、記録、報告をまとめる。
 - [配布用AGENTS.md](../../../templates/AGENTS.md)を利用先の入口とする。agent-gearのルートにある開発用 `AGENTS.md` へ配布ルールを追加しない。`okf-agent-memory` 自体は分野に依存しない記憶管理のままにする。
@@ -15,7 +16,9 @@ Cursorのpstack、参照コミット `032be146865d973682535de75f2287da438550bf` 
 
 ## ローカライズの判断
 
-2026-09-20のユーザー指示により、23原則すべてを必須の制約として採用する。`constraint` は本文の適用条件に該当する場合の義務であり、すべての作業で全工程を実行する指定ではない。作成主体はCLIが記録し、人間による内容確認を行ったという `verified` は付けない。
+2026-09-20のユーザー指示により、23原則すべてを `context` の判断指針として採用し、ルールは `constraint` とする。原則は該当するものを引き続き検索・参照し、作業の目的や制約、他の原則との釣り合いを考えて使う。原則の手順を一律の義務にはせず、必須にする具体的な条件はルールに記す。
+
+この区分は同梱する開発文書の運用方針であり、OKF全体でtypeとgovernanceを固定対応させる仕様ではない。CLIのgovernance省略時の扱いは、typeにかかわらず `context` のまま。作成主体はCLIが記録し、人間による内容確認を行ったという `verified` は付けない。
 
 | 対象 | 配布物での扱い |
 | --- | --- |
@@ -43,6 +46,6 @@ Cursorのpstack、参照コミット `032be146865d973682535de75f2287da438550bf` 
 
 ## 保守時の確認
 
-原則の追加・変更はOKF Agent MemoryのCLIで行い、`show` で本文とメタデータを読み返す。`search --type rule --all` は、ルール未登録の同梱bundleでは0件になる。`search --type principle --all` で全23件のID、`type`、`governance` とdescriptionを確認し、各本文の適用条件・参照元を確かめる。
+原則・ルールの追加・変更はOKF Agent MemoryのCLIで行い、`show` で本文とメタデータを読み返す。`search --type rule --all` で承認ルールの草案1件を取得し、`show` で `governance: constraint`、`status: draft` と本文のTODOコメントを確認する。草案を確定済みのルールとして扱わない。`search --type principle --all` で全23件のID、`type: principle`、`governance: context` とdescriptionを確認し、各本文の適用条件・参照元を確かめる。
 
-`validate --strict --drift` で形式・目次・リンク・孤立文書を検証する。適用ルールを削除した同梱bundleでは、23原則がconcept間のリンクを持たないため、現行のstrict検証は孤立文書23件で不合格になる。エラー・警告・リンク切れが0件であることと区別して報告し、検証を通すためだけの関連リンクは追加しない。運用スキルはskill-creatorの `quick_validate.py` と参照先の存在確認を行う。形式検証は実際のエージェントの行動を保証しないため、適用条件や権限境界は代表的な依頼に照らして見直す。
+`validate --strict --drift` で形式・目次・リンク・孤立文書を検証する。同梱bundleでは、23原則と承認ルールの草案1件がconcept間のリンクを持たないため、現行のstrict検証は孤立文書24件で不合格になる。エラー・警告・リンク切れが0件であることと区別して報告し、検証を通すためだけの関連リンクは追加しない。運用スキルはskill-creatorの `quick_validate.py` と参照先の存在確認を行う。形式検証は実際のエージェントの行動を保証しないため、適用条件や権限境界は代表的な依頼に照らして見直す。

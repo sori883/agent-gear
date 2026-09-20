@@ -1,4 +1,29 @@
 ## 2026-09-20
+* **Update**: [自律実行と承認の境界](rules/remote-change-approval.md).
+* **Creation**: [リモート変更の承認](rules/remote-change-approval.md).
+* **Update**: [共有状態を分離してから排他制御を考える](principles/separate-before-serializing-shared-state.md).
+* **Update**: [許可された可逆的な作業を確認待ちで止めない](principles/never-block-on-the-human.md).
+* **Update**: [呼び出し元を移行して旧APIを取り除く](principles/migrate-callers-then-delete-legacy-apis.md).
+* **Update**: [最小の変更と複雑さで解決する](principles/laziness-protocol.md).
+* **Update**: [実装の都合より利用者の体験を優先する](principles/experience-first.md).
+* **Update**: [型で不正な状態と扱い漏れを防ぐ](principles/type-system-discipline.md).
+* **Update**: [内部実装より観測できる振る舞いをテストする](principles/test-behavior-not-implementation.md).
+* **Update**: [追加する前に不要なものを取り除く](principles/subtract-before-you-add.md).
+* **Update**: [検証できる小さな単位で作業を進める](principles/sequence-verifiable-units.md).
+* **Update**: [新しい要件を前提に設計し直す](principles/redesign-from-first-principles.md).
+* **Update**: [成果物の実際の動作を確かめる](principles/prove-it-works.md).
+* **Update**: [検証できる最終状態へ向けて移行する](principles/outcome-oriented-execution.md).
+* **Update**: [ドメインの規則をデータ構造に表す](principles/model-the-domain.md).
+* **Update**: [読み手が追う層と覚える状態を減らす](principles/minimize-reader-load.md).
+* **Update**: [再実行で同じ最終状態へ収束させる](principles/make-operations-idempotent.md).
+* **Update**: [必要な情報に絞ってコンテキストを保つ](principles/guard-the-context-window.md).
+* **Update**: [ロジックより先にデータと基盤を整える](principles/foundational-thinking.md).
+* **Update**: [不具合を再現して根本原因を直す](principles/fix-root-causes.md).
+* **Update**: [有力な設計案を具体化して比較する](principles/exhaust-the-design-space.md).
+* **Update**: [繰り返す教訓を仕組みとして定着させる](principles/encode-lessons-in-structure.md).
+* **Update**: [作業や検証を再実行できる道具を作る](principles/build-the-lever.md).
+* **Update**: [検証を境界へ集めて内部の責務を分ける](principles/boundary-discipline.md).
+* **Update**: [修正が繰り返し失敗したら前提を疑う](principles/attack-the-premise.md).
 * **Deletion**: `rules/development-principles` をユーザー指示で削除。23原則からの参照と目次を整理（agent:codex）。
 * **Update**: [型で不正な状態と扱い漏れを防ぐ](principles/type-system-discipline.md).
 * **Update**: [内部実装より観測できる振る舞いをテストする](principles/test-behavior-not-implementation.md).
