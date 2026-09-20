@@ -2,7 +2,7 @@
 type: principle
 title: 繰り返す教訓を仕組みとして定着させる
 description: 同じ指示や修正、テスト失敗が繰り返されるとき、型・lint・共通処理・実行時検証などの仕組みで再発を防ぐ。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: encode-lessons-in-structure"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.405Z
+  at: 2026-09-20T12:35:55.459Z
 ---
 # 繰り返す教訓を仕組みとして定着させる
 
@@ -19,7 +19,7 @@ generated:
 
 同じ指示を再び書くとき、人間の指摘やテスト失敗に繰り返すパターンが見つかったとき。
 
-## 守ること
+## 判断の指針
 
 誤りや訂正を、その場の返答だけで終わらせず、適切な仕組みへ反映する。
 

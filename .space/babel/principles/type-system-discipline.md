@@ -2,7 +2,7 @@
 type: principle
 title: 型で不正な状態と扱い漏れを防ぐ
 description: 型・関数の引数と戻り値・状態の表現を設計またはレビューするとき、不正な組み合わせを型で防ぎ、境界での解析と網羅的な分岐で実行時の失敗を減らす。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: type-system-discipline"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.947Z
+  at: 2026-09-20T12:35:56.636Z
 ---
 # 型で不正な状態と扱い漏れを防ぐ
 
@@ -19,7 +19,7 @@ generated:
 
 型、関数の引数・戻り値、状態の表現を設計・レビューするとき。
 
-## 守ること
+## 判断の指針
 
 型検査を、不可能な状態、意味の違う値の取り違え、分岐の扱い漏れを防ぐために使う。
 

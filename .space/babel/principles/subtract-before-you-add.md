@@ -2,7 +2,7 @@
 type: principle
 title: 追加する前に不要なものを取り除く
 description: 機能追加・リファクタリング・書き換えの順序を決めるとき、不要なコードや指示を先に除き、観測された用途に必要な構造を作る。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: subtract-before-you-add"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.902Z
+  at: 2026-09-20T12:35:56.490Z
 ---
 # 追加する前に不要なものを取り除く
 
@@ -19,7 +19,7 @@ generated:
 
 機能追加、リファクタリング、書き換えの作業順序を決めるとき。
 
-## 守ること
+## 判断の指針
 
 複雑な構造へ追加する前に、不要な部分を除去して本質を見えるようにする。変更後は、同じか小さい公開範囲で、より単純で有用な設計を残す。
 

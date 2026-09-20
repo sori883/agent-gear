@@ -2,7 +2,7 @@
 type: principle
 title: 不具合を再現して根本原因を直す
 description: 不具合や異常な挙動を調査・修正するとき、先に再現し、観測した証拠から原因を追って症状だけを隠す修正を避ける。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: fix-root-causes"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.494Z
+  at: 2026-09-20T12:35:55.555Z
 ---
 # 不具合を再現して根本原因を直す
 
@@ -19,7 +19,7 @@ generated:
 
 不具合や異常な挙動を調査・修正するとき。
 
-## 守ること
+## 判断の指針
 
 不具合を再現してから、なぜ起こるかを追って根本原因を修正する。原因を残す回避策を積み重ねない。
 

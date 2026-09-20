@@ -2,7 +2,7 @@
 type: principle
 title: 読み手が追う層と覚える状態を減らす
 description: 追いにくいコードをレビューしたり、層・ラッパー・可変状態を追加したりするとき、読み手がたどる層と覚える状態を減らして値の出所を追いやすくする。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: minimize-reader-load"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.742Z
+  at: 2026-09-20T12:35:55.890Z
 ---
 # 読み手が追う層と覚える状態を減らす
 
@@ -19,7 +19,7 @@ generated:
 
 コードが追いにくいとき、新しい層・ラッパー・可変状態を追加するとき、レビューするとき。
 
-## 守ること
+## 判断の指針
 
 保守性は、読み手が理解するために必要な仕事で評価する。行数だけでなく、答えまでにたどる層と、頭に保持する隠れた状態の両方を見る。
 

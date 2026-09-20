@@ -2,7 +2,7 @@
 type: principle
 title: ドメインの規則をデータ構造に表す
 description: 状態を持つ処理、分岐が多い処理、同じデータの前提が複数箇所へ広がる処理を書くとき、規則を型・状態機械・表などに集約する。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: model-the-domain"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.762Z
+  at: 2026-09-20T12:35:55.977Z
 ---
 # ドメインの規則をデータ構造に表す
 
@@ -19,7 +19,7 @@ generated:
 
 状態を持つ処理、分岐が増える処理、データの形に関する同じ前提が複数箇所へ広がるコードを書くとき。
 
-## 守ること
+## 判断の指針
 
 実際の対象領域を表す構造を選び、規則を散在する条件分岐へ埋め込まない。
 

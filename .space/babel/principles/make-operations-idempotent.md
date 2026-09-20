@@ -2,7 +2,7 @@
 type: principle
 title: 再実行で同じ最終状態へ収束させる
 description: 停止・再起動・再試行が起こり得るコマンド、起動終了処理、ループを設計するとき、重複実行や途中失敗からも同じ最終状態へ収束させる。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: make-operations-idempotent"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.701Z
+  at: 2026-09-20T12:35:55.765Z
 ---
 # 再実行で同じ最終状態へ収束させる
 
@@ -19,7 +19,7 @@ generated:
 
 停止・再起動・再試行が起こり得るコマンド、起動・終了処理、処理ループを設計するとき。
 
-## 守ること
+## 判断の指針
 
 状態を変更する操作では、「2回続けて実行するとどうなるか」「途中で停止した後に再実行するとどうなるか」を確認する。
 

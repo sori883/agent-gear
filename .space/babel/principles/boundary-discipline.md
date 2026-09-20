@@ -2,7 +2,7 @@
 type: principle
 title: 検証を境界へ集めて内部の責務を分ける
 description: 入力検証・エラー処理・CLIや通信の接続部分を設計するとき、検証と型への変換をシステム境界に集約し、内部の業務ロジックを純粋な処理に保つ。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: boundary-discipline"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.367Z
+  at: 2026-09-20T12:35:55.362Z
 ---
 # 検証を境界へ集めて内部の責務を分ける
 
@@ -19,7 +19,7 @@ generated:
 
 入力検証、エラー処理、CLI・設定・通信・フレームワークの接続部分を設計するとき。
 
-## 守ること
+## 判断の指針
 
 CLI引数、設定ファイル、ネットワーク、外部APIなどの境界で、生の入力を検証してドメインの型へ変換する。境界で保証済みの条件は内部で何度も検証し直さない。
 

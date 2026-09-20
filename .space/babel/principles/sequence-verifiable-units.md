@@ -2,7 +2,7 @@
 type: principle
 title: 検証できる小さな単位で作業を進める
 description: 複数箇所の修正・移行・反復する編集やコミット・PRの順序を組み立てるとき、作業を確認可能な小さな単位へ分け、各単位の検証後に次へ進む。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: sequence-verifiable-units"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.878Z
+  at: 2026-09-20T12:35:56.418Z
 ---
 # 検証できる小さな単位で作業を進める
 
@@ -19,7 +19,7 @@ generated:
 
 複数箇所の修正、移行、反復する編集、コミットやPRの順序を組み立てるとき。
 
-## 守ること
+## 判断の指針
 
 既知の状態、一つの変更、検証というまとまりを作り、後続作業を未確認の土台へ積まない。
 

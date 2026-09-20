@@ -2,7 +2,7 @@
 type: principle
 title: 有力な設計案を具体化して比較する
 description: 前例のないUI、複数の有力な構造、操作感が重要な判断で設計が明らかでないとき、異なる2〜3案を試作または具体化して比較する。
-governance: constraint
+governance: context
 status: stable
 tags: 
   - 開発原則
@@ -11,7 +11,7 @@ sources:
     title: "pstack: exhaust-the-design-space"
 generated: 
   by: agent:codex
-  at: 2026-09-20T04:21:20.423Z
+  at: 2026-09-20T12:35:55.506Z
 ---
 # 有力な設計案を具体化して比較する
 
@@ -19,7 +19,7 @@ generated:
 
 前例のないUI、複数の実現可能な構造、操作感が重要な製品判断などで、適切な設計が明らかでないとき。
 
-## 守ること
+## 判断の指針
 
 一つの案を実装し切る前に、異なる構造の2〜3案を試作またはスケッチし、同じ基準で並べて比較する。最初の案の色や細部を変えただけでは、別案として数えない。
 
