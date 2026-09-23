@@ -82,5 +82,5 @@ test("simultaneous first boots restart before importing freshly installed depend
   await writeFile(join(copied, "lib/cli.ts"), 'import probe from "orch-test-probe";\nexport async function main() { console.log(probe); return 0; }\n');
   await rm(join(copied, "node_modules"), { recursive: true, force: true });
   const results = await Promise.all(Array.from({ length: 4 }, () => run([], join(copied, "task.ts"))));
-  for (const result of results) { expect(result.code).toBe(0); expect(result.stdout.trim()).toBe("42"); }
+  for (const result of results) { expect(result).toEqual({ code: 0, stdout: "42\n", stderr: "" }); }
 });
