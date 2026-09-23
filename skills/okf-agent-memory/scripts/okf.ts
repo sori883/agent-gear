@@ -1,14 +1,12 @@
 #!/usr/bin/env bun
 import { bootstrap } from "./bootstrap.ts";
+import { fileURLToPath } from "node:url";
 
 export async function main(args: string[]): Promise<number> {
   try {
-    if (await bootstrap()) {
-      const child = Bun.spawn([process.execPath, "--no-install", import.meta.path, ...args], { cwd: process.cwd(), stdin: "inherit", stdout: "inherit", stderr: "inherit" });
-      return await child.exited;
-    }
-    const cli = await import("./lib/cli.ts");
-    return await cli.main(args);
+    await bootstrap();
+    const child = Bun.spawn([process.execPath, "--no-install", fileURLToPath(new URL("./run.ts", import.meta.url)), ...args], { cwd: process.cwd(), stdin: "inherit", stdout: "inherit", stderr: "inherit" });
+    return await child.exited;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (args.includes("--json")) process.stdout.write(JSON.stringify({ status: "error", error: message }) + "\n");

@@ -70,7 +70,7 @@ test("copied bootstrap installs locked local dependencies and notices a changed 
   expect(await Bun.file(join(project, "bun.lock")).exists()).toBe(false);
 });
 
-test("simultaneous first boots restart before importing freshly installed dependencies", async () => {
+async function dependencyFixture() {
   const copied = join(project, "concurrent/scripts"); await cp(source, copied, { recursive: true, filter: path => !path.includes("node_modules") });
   const fixture = join(copied, "fixtures/probe"); await mkdir(fixture, { recursive: true });
   await writeFile(join(fixture, "package.json"), JSON.stringify({ name: "orch-test-probe", version: "1.0.0", main: "index.js" }));
@@ -81,6 +81,29 @@ test("simultaneous first boots restart before importing freshly installed depend
   expect(await install.exited).toBe(0);
   await writeFile(join(copied, "lib/cli.ts"), 'import probe from "orch-test-probe";\nexport async function main() { console.log(probe); return 0; }\n');
   await rm(join(copied, "node_modules"), { recursive: true, force: true });
+  return copied;
+}
+
+test("simultaneous first boots restart before importing freshly installed dependencies", async () => {
+  const copied = await dependencyFixture();
   const results = await Promise.all(Array.from({ length: 4 }, () => run([], join(copied, "task.ts"))));
   for (const result of results) { expect(result).toEqual({ code: 0, stdout: "42\n", stderr: "" }); }
+});
+
+test("a process started before another installer finishes loads dependencies in a fresh runtime", async () => {
+  const copied = await dependencyFixture();
+  const bootstrapPath = join(copied, "bootstrap.ts");
+  await writeFile(bootstrapPath, 'if (process.env.ORCH_TEST_DELAY) { process.stdout.write("started\\n"); await Bun.stdin.text(); }\n' + await readFile(bootstrapPath, "utf8"));
+  const delayed = Bun.spawn([process.execPath, "--no-install", join(copied, "task.ts")], {
+    cwd: project, env: { ...process.env, ORCH_TEST_DELAY: "1" }, stdin: "pipe", stdout: "pipe", stderr: "pipe",
+  });
+  const output = delayed.stdout.getReader();
+  try {
+    expect(new TextDecoder().decode((await output.read()).value)).toBe("started\n");
+    expect(await run([], join(copied, "task.ts"))).toEqual({ code: 0, stdout: "42\n", stderr: "" });
+    delayed.stdin.end();
+    const remainingOutput = async () => { let text = ""; for (;;) { const { value, done } = await output.read(); if (done) return text; text += new TextDecoder().decode(value); } };
+    const [code, stdout, stderr] = await Promise.all([delayed.exited, remainingOutput(), new Response(delayed.stderr).text()]);
+    expect({ code, stdout, stderr }).toEqual({ code: 0, stdout: "42\n", stderr: "" });
+  } finally { delayed.kill(); await delayed.exited; }
 });

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "plugin": "agent-gear",
   "product": "codex",
-  "version": "0.1.0+codex.20260923110636",
+  "version": "0.1.0+codex.20260923112621",
   "files": [
     {
       "source": "space/babel/LICENSE",

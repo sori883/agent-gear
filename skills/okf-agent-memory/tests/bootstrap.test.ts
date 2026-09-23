@@ -69,6 +69,24 @@ test("simultaneous first invocations share installation safely", async () => {
   expect(await Bun.file(join(scripts, "node_modules/.okf-bootstrap.lock")).exists()).toBe(false);
 });
 
+test("a CLI waiting before bootstrap can use dependencies installed by another process", async () => {
+  const bootstrapPath = join(scripts, "bootstrap.ts");
+  await writeFile(bootstrapPath, 'if (process.env.OKF_TEST_DELAY) { process.stdout.write("started\\n"); await Bun.stdin.text(); }\n' + await readFile(bootstrapPath, "utf8"));
+  const delayed = Bun.spawn([process.execPath, "--no-install", cli, "version", "--json"], {
+    cwd: project, env: { ...process.env, OKF_TEST_DELAY: "1" }, stdin: "pipe", stdout: "pipe", stderr: "pipe",
+  });
+  const output = delayed.stdout.getReader();
+  try {
+    expect(new TextDecoder().decode((await output.read()).value)).toBe("started\n");
+    expect(await run(["version"])).toMatchObject({ code: 0, stderr: "" });
+    delayed.stdin.end();
+    const remainingOutput = async () => { let text = ""; for (;;) { const { value, done } = await output.read(); if (done) return text; text += new TextDecoder().decode(value); } };
+    const [code, stdout, stderr] = await Promise.all([delayed.exited, remainingOutput(), new Response(delayed.stderr).text()]);
+    expect({ code, stderr }).toEqual({ code: 0, stderr: "" });
+    expect(JSON.parse(stdout)).toMatchObject({ version: "0.1.0" });
+  } finally { delayed.kill(); await delayed.exited; }
+});
+
 test("a stale bootstrap lock is reported without being stolen", async () => {
   await mkdir(join(scripts, "node_modules"), { recursive: true });
   const locked = join(scripts, "node_modules/.okf-bootstrap.lock");
