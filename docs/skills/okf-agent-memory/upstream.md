@@ -57,9 +57,9 @@ CLI 0.1.0は上記コミットの `pkg/okf/{parser,bundle,search,mutate,validato
 
 ## 開発時の検証
 
-リポジトリルートで実行する。通常のテストはローカルの一時ディレクトリだけを使い、ネットワークやGoを必要としない。
+リポジトリルートで実行する。通常のテストはローカルの一時ディレクトリを使い、Goを必要としない。初回の依存導入とbootstrap試験には、ネットワークまたはBunキャッシュが必要になる。
 
-依存は `skills/okf-agent-memory/package.json` に定義し、ルートのBun workspaceからインストールする。開発環境・CIは先に `bun install --frozen-lockfile` を実行する。MiniSearchは型定義を同梱し、実行時の追加依存はない。単語分割にはBunの `Intl.Segmenter` を利用する。通常のテスト中はBunの自動インストールを無効化し、配布テストにはインストール済み依存をコピーする。
+2026-09-23に依存を`skills/okf-agent-memory/scripts/package.json`と同じ場所のbun.lockへ移した。ルートworkspaceは使わない。先にルートで`bun install --frozen-lockfile --ignore-scripts`を実行し、`bun skills/okf-agent-memory/scripts/okf.ts version --json`でスキル内の依存を用意してから、型検査とテストを実行する。MiniSearchは型定義を同梱する。初回・更新・同時起動・失敗時の検証は[依存移行記録](runtime-migration.md)に記載する。
 
 ```sh
 bun run test
@@ -92,7 +92,7 @@ OKF_REFERENCE_BIN=/tmp/okf-reference bun run test
 
 これにGoとの比較テスト2件を加えて検証する。部分失敗の権限テストはPOSIXの一般ユーザー向けであり、Windowsとroot実行ではskipする。
 
-配布物には `SKILL.md`・利用者向けの `references/`・実行用の `scripts/`・依存定義の `package.json`・`LICENSE` を含め、開発用の `tests/` と本書を含めない。配布先で `bun install --cwd <スキルの配置先> --ignore-scripts` を実行すると、固定バージョンのMiniSearchを取得する。原著の著作権・利用条件はスキルに同梱する [LICENSE](../../../skills/okf-agent-memory/LICENSE) に保持している。MiniSearchのMITライセンスはインストールされるパッケージに同梱される。
+配布物には`SKILL.md`・利用者向けの`references/`・依存定義とlockを含む`scripts/`・`LICENSE`を含め、開発用の`tests/`と本書を含めない。配布先のCLI起動時にbootstrapが固定依存をscripts内へ導入する。原著の著作権・利用条件はスキルに同梱する [LICENSE](../../../skills/okf-agent-memory/LICENSE) に保持している。MiniSearchのMITライセンスはインストールされるパッケージに同梱される。
 
 ### 日本語検索・MiniSearchへの移行
 

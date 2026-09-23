@@ -1,0 +1,28 @@
+name: Validate distribution
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - name: Prepare each CLI runtime
+        run: |
+          bun skills/okf-agent-memory/scripts/okf.ts version --json
+          bun skills/orch/scripts/task.ts --help
+          bun skills/setup/scripts/setup.ts --help
+      - run: bun run typecheck
+      - run: bun run test
+      - name: Compare every generated file, including untracked paths
+        run: bun run build:check
+      - run: git diff --check

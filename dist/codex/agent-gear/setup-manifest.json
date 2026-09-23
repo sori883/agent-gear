@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "plugin": "agent-gear",
+  "product": "codex",
+  "version": "0.1.0+codex.20260923104742",
+  "files": [
+    {
+      "source": "space/babel/LICENSE",
+      "destination": ".space/babel/vendor/agent-gear/LICENSE",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/decisions/index.md",
+      "destination": ".space/babel/vendor/agent-gear/decisions/index.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/index.md",
+      "destination": ".space/babel/vendor/agent-gear/index.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/knowledge/index.md",
+      "destination": ".space/babel/vendor/agent-gear/knowledge/index.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/log.md",
+      "destination": ".space/babel/vendor/agent-gear/log.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/attack-the-premise.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/attack-the-premise.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/boundary-discipline.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/boundary-discipline.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/build-the-lever.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/build-the-lever.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/encode-lessons-in-structure.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/encode-lessons-in-structure.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/exhaust-the-design-space.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/exhaust-the-design-space.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/experience-first.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/experience-first.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/fix-root-causes.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/fix-root-causes.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/foundational-thinking.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/foundational-thinking.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/guard-the-context-window.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/guard-the-context-window.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/index.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/index.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/laziness-protocol.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/laziness-protocol.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/make-operations-idempotent.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/make-operations-idempotent.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/migrate-callers-then-delete-legacy-apis.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/migrate-callers-then-delete-legacy-apis.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/minimize-reader-load.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/minimize-reader-load.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/model-the-domain.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/model-the-domain.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/never-block-on-the-human.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/never-block-on-the-human.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/outcome-oriented-execution.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/outcome-oriented-execution.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/prove-it-works.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/prove-it-works.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/redesign-from-first-principles.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/redesign-from-first-principles.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/separate-before-serializing-shared-state.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/separate-before-serializing-shared-state.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/sequence-verifiable-units.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/sequence-verifiable-units.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/subtract-before-you-add.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/subtract-before-you-add.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/test-behavior-not-implementation.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/test-behavior-not-implementation.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/principles/type-system-discipline.md",
+      "destination": ".space/babel/vendor/agent-gear/principles/type-system-discipline.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/procedures/index.md",
+      "destination": ".space/babel/vendor/agent-gear/procedures/index.md",
+      "mode": "copy"
+    },
+    {
+      "source": "space/babel/rules/index.md",
+      "destination": ".space/babel/vendor/agent-gear/rules/index.md",
+      "mode": "copy"
+    },
+    {
+      "source": "templates/AGENTS.md",
+      "destination": "AGENTS.md",
+      "mode": "managed-block"
+    }
+  ]
+}
