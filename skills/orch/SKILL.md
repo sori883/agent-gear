@@ -11,4 +11,4 @@ description: 複数の作業unitについて担当・依存・進捗・確認結
 
 親は利用環境の道具で担当を起動・待機・停止する。CLIはエージェント起動、実装、テスト、PR操作、知識保存を実行しない。依頼範囲と既存の承認を引き継ぎ、分担を理由に作業を広げない。
 
-全体の工程選択は[development-workflow](../development-workflow/SKILL.md)、知識保存は引き渡し工程から[OKF](../okf-agent-memory/SKILL.md)、再開用の要約は[checkpoint-safely](../checkpoint-safely/SKILL.md)へ渡す。台帳を知識やcheckpointの本文に複製しない。
+全体の工程選択は[devlow](../devlow/SKILL.md)、知識保存は引き渡し工程から[OKF](../okf-agent-memory/SKILL.md)、再開用の要約は[checkpoint-safely](../checkpoint-safely/SKILL.md)へ渡す。台帳を知識やcheckpointの本文に複製しない。

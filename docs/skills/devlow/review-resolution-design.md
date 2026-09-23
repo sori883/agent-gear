@@ -6,7 +6,7 @@
 
 ## 1. このワークフローで行うこと
 
-development-workflowは、開発を依頼されたAIが、必要な作業を選び、結果を確認して利用者へ渡すための手順である。「機能を追加する」だけでなく、「設計だけ」「検証だけ」「レビューだけ」という依頼にも使う。
+devlowは、開発を依頼されたAIが、必要な作業を選び、結果を確認して利用者へ渡すための手順である。「機能を追加する」だけでなく、「設計だけ」「検証だけ」「レビューだけ」という依頼にも使う。
 
 **タスク**は、目的と終了条件を持つ一件の仕事。**工程**は、その仕事の中で行う調査や設計などの作業の種類である。一つのタスクが必要な工程を通る。工程ごとに別のAIやファイルを用意する必要はない。
 
@@ -153,18 +153,18 @@ development-workflowは、開発を依頼されたAIが、必要な作業を選�
 
 | ファイル | 修正する内容 |
 | --- | --- |
-| [references/workflow.md](../../../skills/development-workflow/references/workflow.md) | 経路の分岐、状態と判定の定義、保存担当、計画時点の表現の正本 |
-| [assets/task-template.md](../../../skills/development-workflow/assets/task-template.md) | 冒頭の進行状態と成果判定、工程表の列分離、条件別結果への参照 |
-| [references/intake.md](../../../skills/development-workflow/references/intake.md) | 依頼の終了条件と確認対象の条件を区別して、記録を初期化する案内 |
-| [references/investigate.md](../../../skills/development-workflow/references/investigate.md)・[design.md](../../../skills/development-workflow/references/design.md) | 読み取りと保存候補の受け渡し、blueprintの例外 |
-| [references/plan.md](../../../skills/development-workflow/references/plan.md)・[assets/plan-template.md](../../../skills/development-workflow/assets/plan-template.md) | 方法・期待値・必要な証拠・取得条件の予定を記す表現、保存候補の受け渡し |
-| [references/implement.md](../../../skills/development-workflow/references/implement.md) | 実装状態と取得済みの確認結果を引き渡す責任 |
-| [references/verify.md](../../../skills/development-workflow/references/verify.md)・[review.md](../../../skills/development-workflow/references/review.md) | 報告のみの終了経路、作業完了と対象の評価の区別、修正へ進む条件 |
-| [references/deliver.md](../../../skills/development-workflow/references/deliver.md) | 保存責任と例外の確認、依頼の種類に応じた最終状態の記録 |
+| [references/workflow.md](../../../skills/devlow/references/workflow.md) | 経路の分岐、状態と判定の定義、保存担当、計画時点の表現の正本 |
+| [assets/task-template.md](../../../skills/devlow/assets/task-template.md) | 冒頭の進行状態と成果判定、工程表の列分離、条件別結果への参照 |
+| [references/intake.md](../../../skills/devlow/references/intake.md) | 依頼の終了条件と確認対象の条件を区別して、記録を初期化する案内 |
+| [references/investigate.md](../../../skills/devlow/references/investigate.md)・[design.md](../../../skills/devlow/references/design.md) | 読み取りと保存候補の受け渡し、blueprintの例外 |
+| [references/plan.md](../../../skills/devlow/references/plan.md)・[assets/plan-template.md](../../../skills/devlow/assets/plan-template.md) | 方法・期待値・必要な証拠・取得条件の予定を記す表現、保存候補の受け渡し |
+| [references/implement.md](../../../skills/devlow/references/implement.md) | 実装状態と取得済みの確認結果を引き渡す責任 |
+| [references/verify.md](../../../skills/devlow/references/verify.md)・[review.md](../../../skills/devlow/references/review.md) | 報告のみの終了経路、作業完了と対象の評価の区別、修正へ進む条件 |
+| [references/deliver.md](../../../skills/devlow/references/deliver.md) | 保存責任と例外の確認、依頼の種類に応じた最終状態の記録 |
 
-[verification-template.md](../../../skills/development-workflow/assets/verification-template.md)は、すでに対象・版・判定・証拠を持つため、その構成を再利用する。実装時に用語と参照の整合を確認する。
+[verification-template.md](../../../skills/devlow/assets/verification-template.md)は、すでに対象・版・判定・証拠を持つため、その構成を再利用する。実装時に用語と参照の整合を確認する。
 
-共通規則はworkflow.mdに集め、各工程とテンプレートは参照する。実装時は[全体設計資料](../../development-workflow-design.md)と[タスク管理の一覧](task-management-inventory.md)の該当説明も合わせ、[実装・確認記録](implementation.md)へ実施範囲を追記する。基本の配置・配布方針は[architecture.md](../../architecture.md)を維持する。
+共通規則はworkflow.mdに集め、各工程とテンプレートは参照する。実装時は[全体設計資料](../../devlow-design.md)と[タスク管理の一覧](task-management-inventory.md)の該当説明も合わせ、[実装・確認記録](implementation.md)へ実施範囲を追記する。基本の配置・配布方針は[architecture.md](../../architecture.md)を維持する。
 
 ### 利用先で残す記録
 

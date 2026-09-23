@@ -2,7 +2,7 @@
 
 2026-09-23作成。レビュー修正を採用して実装へ進む設計。現在の実装・検証範囲は[実装記録](../orch/implementation.md)を参照する。この文書は会話を読んでいない人向けに、利用方法、管理する情報、ファイル、実装する範囲を説明する。コマンドの詳細は[CLIの設計案](orchestrator-cli-design.md)を参照する。
 
-既存の方針は[配布設計](../../architecture.md)と[全体フロー](../../../skills/development-workflow/references/workflow.md)。ここで比較した保存方式・コマンド構成の推奨案を採用し、orchの配布用ソースに実装した。利用時の具体的な入力は[CLI仕様](../../../skills/orch/references/cli.md)を参照する。
+既存の方針は[配布設計](../../architecture.md)と[全体フロー](../../../skills/devlow/references/workflow.md)。ここで比較した保存方式・コマンド構成の推奨案を採用し、orchの配布用ソースに実装した。利用時の具体的な入力は[CLI仕様](../../../skills/orch/references/cli.md)を参照する。
 
 ## 1. 何を解決するか
 
@@ -142,8 +142,8 @@ TSVは作成できるが、推奨案では書き換える台帳ではなく、�
 
 | ファイル | 所有する内容 |
 | --- | --- |
-| `skills/development-workflow/references/workflow.md` | 全体の工程と、orchを使う条件・接続先 |
-| `skills/development-workflow/references/orchestrate.md` | 計画から分担へ渡す入力、結果をverify・review・deliverへ戻す接続。従来のprogram.mdという予定名を置き換えた |
+| `skills/devlow/references/workflow.md` | 全体の工程と、orchを使う条件・接続先 |
+| `skills/devlow/references/orchestrate.md` | 計画から分担へ渡す入力、結果をverify・review・deliverへ戻す接続。従来のprogram.mdという予定名を置き換えた |
 | `skills/orch/SKILL.md` | unit管理スキルの入口 |
 | `skills/orch/references/orchestration.md` | 親・子の運用手順、更新責任、質問・差し戻し・再開 |
 | `skills/orch/references/cli.md` | コマンド、状態、保存・復旧の操作仕様 |
@@ -196,7 +196,7 @@ TSVは作成できるが、推奨案では書き換える台帳ではなく、�
 
 ## 12. 参照とpstackとの関係
 
-- [全体設計](../../development-workflow-design.md)：工程、CLIと文書の正本、規模別の記録方針。
+- [全体設計](../../devlow-design.md)：工程、CLIと文書の正本、規模別の記録方針。
 - [タスク管理と生成ファイルの現状](task-management-inventory.md)：実装済みの定義と未実装部分。
 - [pstackのOrchestrate](https://github.com/cursor/plugins/blob/032be146865d973682535de75f2287da438550bf/pstack/skills/poteto-mode/playbooks/orchestrate.md)：親が担当を動かし、CLIが記録を持つ責務分離と、先行一単位を通す運用を参考にする。
 - [pstackのCLI](https://github.com/cursor/plugins/blob/032be146865d973682535de75f2287da438550bf/pstack/skills/poteto-mode/scripts/orch/orch.ts)：unit・ledger・inbox・gateという分類を参考にする。コマンド互換や台帳の互換は約束しない。

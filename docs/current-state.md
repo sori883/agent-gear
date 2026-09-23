@@ -8,7 +8,7 @@ agent-gearは、開発作業のフロー、タスク台帳、知識管理、プ�
 
 | 構成物 | 役割・入口 |
 | --- | --- |
-| development-workflow | [全体フロー](../skills/development-workflow/references/workflow.md)。依頼整理・調査・設計・計画・実装・検証・レビュー・引き渡しを規模と依頼種別から選ぶ |
+| devlow | [全体フロー](../skills/devlow/references/workflow.md)。依頼整理・調査・設計・計画・実装・検証・レビュー・引き渡しを規模と依頼種別から選ぶ |
 | orch | [スキル](../skills/orch/SKILL.md)と専用CLI。unitの進行、確認結果、親の受け入れを分離して管理する |
 | okf-agent-memory | [スキル](../skills/okf-agent-memory/SKILL.md)と専用CLI。Markdownの知識を検索・保存・更新・関連付け・検証する |
 | setup | [スキル](../skills/setup/SKILL.md)と専用CLI。同梱文書と指示を既存のプロジェクトへ導入・更新する |

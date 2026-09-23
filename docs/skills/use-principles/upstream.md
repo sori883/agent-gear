@@ -10,9 +10,9 @@ Cursorのpstack、参照コミット `032be146865d973682535de75f2287da438550bf` 
 - 各原則は `type: principle`、`governance: context` とし、原文への固定リンクを `sources` に残す。descriptionに参照する場面と判断の指針を記し、本文には詳細な適用条件と例外を保持する。
 - `.space/babel/rules/` に追加するルールは `type: rule`、`governance: constraint` を明示する。具体的に守る行動・禁止事項・承認条件を記し、原則の本文を複製しない。
 - 各原則はtype検索とdescriptionから選んで参照する。適用手順を重複して記すルール文書や、場面と参照先の対応表は同梱しない。
-- [原則参照スキル](../../../skills/use-principles/SKILL.md)に、候補の検索、本文の確認、適用結果の受け渡しを置く。作業の進行・委譲・検証・記録・報告は[全体フロー](../../../skills/development-workflow/references/workflow.md)へ分離した。
+- [原則参照スキル](../../../skills/use-principles/SKILL.md)に、候補の検索、本文の確認、適用結果の受け渡しを置く。作業の進行・委譲・検証・記録・報告は[全体フロー](../../../skills/devlow/references/workflow.md)へ分離した。
 - [配布用AGENTS.md](../../../templates/AGENTS.md)を利用先の入口とする。agent-gearのルートにある開発用 `AGENTS.md` へ配布ルールを追加しない。`okf-agent-memory` 自体は分野に依存しない記憶管理のままにする。
-- 原著の[MITライセンス](https://github.com/cursor/plugins/blob/032be146865d973682535de75f2287da438550bf/pstack/LICENSE)を、OKF bundleと原則参照スキルそれぞれの `LICENSE` に同梱する。進行手順を移したdevelopment-workflowにも同じLICENSEを保持する。
+- 原著の[MITライセンス](https://github.com/cursor/plugins/blob/032be146865d973682535de75f2287da438550bf/pstack/LICENSE)を、OKF bundleと原則参照スキルそれぞれの `LICENSE` に同梱する。進行手順を移したdevlowにも同じLICENSEを保持する。
 
 ## ローカライズの判断
 
@@ -22,7 +22,7 @@ Cursorのpstack、参照コミット `032be146865d973682535de75f2287da438550bf` 
 
 | 対象 | 配布物での扱い |
 | --- | --- |
-| 起動と参照 | 利用先の配布用AGENTS.mdからdevelopment-workflowを読み、必要な原則参照をuse-principlesへ渡す。ルールと原則の全候補のdescriptionを確認し、作業に合致する文書や適用判断が曖昧な文書の本文を読む。CLIの操作手順はOKFスキルに置く |
+| 起動と参照 | 利用先の配布用AGENTS.mdからdevlowを読み、必要な原則参照をuse-principlesへ渡す。ルールと原則の全候補のdescriptionを確認し、作業に合致する文書や適用判断が曖昧な文書の本文を読む。CLIの操作手順はOKFスキルに置く |
 | 原則の日本語化 | 単なる一行の標語にせず、適用条件、実行上の判断、例外を残す。具体例は必要な範囲で要約する |
 | 自律性と承認 | 可逆性だけで外部操作の権限を推定しない。ユーザーの依頼範囲と既存承認を使い、同じ確認を繰り返さない |
 | コミット・rebase・PR | 原文の自動コミット、作業前rebase、各手順後のPR作成を一律の義務にしない。現在のユーザー指示を優先する |
@@ -40,7 +40,7 @@ Cursorのpstack、参照コミット `032be146865d973682535de75f2287da438550bf` 
 
 `templates/AGENTS.md` は利用先プロジェクトのルートへ配置するためのひな形であり、保存場所の `templates/` を作業するエージェントへの開発指示ではない。利用先に既存の `AGENTS.md` がある場合は、内容を上書きせず「開発ルール」の節を統合する。agent-gear固有の `work/` に関する指示は配布しない。
 
-ひな形の入口は利用先ルートの `skills/development-workflow/` とする。同じ親ディレクトリに、全体フローが参照するuse-principles・okf-agent-memory・checkpoint-safely・how・why・system-blueprintを配置する。23原則を含むbundleは `.space/babel/` を前提とする。既存bundleへ追加する場合はOKF CLIで検索して重複を確認し、既存の文書・目次・履歴を上書きしない。OKF CLIの依存の準備はOKF Agent Memoryの手順に従う。異なる配置にする場合は、ひな形のスキルパスとbundleパスも合わせる。
+ひな形の入口は利用先ルートの `skills/devlow/` とする。同じ親ディレクトリに、全体フローが参照するuse-principles・okf-agent-memory・checkpoint-safely・how・why・system-blueprintを配置する。23原則を含むbundleは `.space/babel/` を前提とする。既存bundleへ追加する場合はOKF CLIで検索して重複を確認し、既存の文書・目次・履歴を上書きしない。OKF CLIの依存の準備はOKF Agent Memoryの手順に従う。異なる配置にする場合は、ひな形のスキルパスとbundleパスも合わせる。
 
 運用スキルの必須参照は同梱するスキルとOKF文書に限定する。agent-gearの開発用 `.agents/skills/` は配布先の必須依存にしない。
 

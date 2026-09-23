@@ -4,7 +4,7 @@
 
 ## 実装順と所有範囲
 
-この作業の実装担当が`skills/orch/`を一括して更新する。全体フローとの接続は`skills/development-workflow/`、設計と実装状況は`docs/`に反映する。既存の他スキル・テンプレートの変更は保持する。
+この作業の実装担当が`skills/orch/`を一括して更新する。全体フローとの接続は`skills/devlow/`、設計と実装状況は`docs/`に反映する。既存の他スキル・テンプレートの変更は保持する。
 
 1. レビュー修正：入力版を変えない通常再開、有効な検証記録だけの提出、旧通知の失効、統括セッションの引き継ぎ条件。
 2. unit・試行・状態・保存のテストと実装。
@@ -33,9 +33,9 @@
 | --- | --- |
 | `bun run test` | 125 pass、2 skip、0 fail。127ケース、619 assertions。orchの31ケースは全て成功 |
 | `bun run typecheck` | 成功 |
-| system skill-creatorの`quick_validate.py` | orch・development-workflowの両方で成功 |
+| system skill-creatorの`quick_validate.py` | orch・devlowの両方で成功 |
 | `git diff --check` | 成功 |
-| コピー後のローカルリンク・見出し参照、コードフェンス、末尾空白、開発元パスへの依存 | orch・development-workflowの18 Markdownと設計資料6件で156参照を照合し、問題なし |
+| コピー後のローカルリンク・見出し参照、コードフェンス、末尾空白、開発元パスへの依存 | orch・devlowの18 Markdownと設計資料6件で156参照を照合し、問題なし |
 
 skipは既存OKFの上流Go実行ファイルとの互換テスト2件で、`OKF_REFERENCE_BIN`未指定によるもの。orchにskipはない。CLIはテストを記録するだけなので、この開発時のテスト結果を利用先の台帳へ転記していない。
 

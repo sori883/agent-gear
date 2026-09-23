@@ -1,10 +1,10 @@
 # 全体フローの実装・確認記録
 
-2026-09-21。[設計資料](../../development-workflow-design.md)に基づき、全体フローの初版と、続く依頼整理工程の実施範囲を記録する。
+2026-09-21。[設計資料](../../devlow-design.md)に基づき、全体フローの初版と、続く依頼整理工程の実施範囲を記録する。
 
 ## 全体フロー初版の範囲
 
-- `skills/development-workflow/SKILL.md` と `references/workflow.md` を作る。全体の工程選択、受け渡し、終了条件、記録先、既存スキルへの接続を扱う。
+- `skills/devlow/SKILL.md` と `references/workflow.md` を作る。全体の工程選択、受け渡し、終了条件、記録先、既存スキルへの接続を扱う。
 - use-principlesの全体進行の責務を統括側へ移し、原則参照に絞る。導入用AGENTS.mdの入口を接続する。
 - 配置と責務の設計資料、既存の移植記録を現状に合わせる。Obsidianには設計資料を同期する。
 
@@ -14,13 +14,13 @@
 
 | ファイル | 役割 |
 | --- | --- |
-| [SKILL.md](../../../skills/development-workflow/SKILL.md) | 起動条件と全体フローへの入口 |
-| [workflow.md](../../../skills/development-workflow/references/workflow.md) | 工程選択と実行時の共通契約。依頼整理の詳細はintake.mdへ接続 |
-| [intake.md](../../../skills/development-workflow/references/intake.md) | 目的・範囲・受け入れ条件・未決事項を整理し、次に着手できる工程へ渡す |
-| [task-template.md](../../../skills/development-workflow/assets/task-template.md) | ファイル化する依頼整理記録の出発点。必要な節だけを使う |
-| [LICENSE](../../../skills/development-workflow/LICENSE) | use-principlesから移した進行手順のライセンスを保持 |
+| [SKILL.md](../../../skills/devlow/SKILL.md) | 起動条件と全体フローへの入口 |
+| [workflow.md](../../../skills/devlow/references/workflow.md) | 工程選択と実行時の共通契約。依頼整理の詳細はintake.mdへ接続 |
+| [intake.md](../../../skills/devlow/references/intake.md) | 目的・範囲・受け入れ条件・未決事項を整理し、次に着手できる工程へ渡す |
+| [task-template.md](../../../skills/devlow/assets/task-template.md) | ファイル化する依頼整理記録の出発点。必要な節だけを使う |
+| [LICENSE](../../../skills/devlow/LICENSE) | use-principlesから移した進行手順のライセンスを保持 |
 | [use-principles](../../../skills/use-principles/SKILL.md) | 検索・本文確認・適用条件の受け渡し。工程や保存を起動しない |
-| [導入用AGENTS.md](../../../templates/AGENTS.md) | development-workflowを入口にして原則参照を接続 |
+| [導入用AGENTS.md](../../../templates/AGENTS.md) | devlowを入口にして原則参照を接続 |
 
 全体フローはスキル内の相対参照で読み、開発リポジトリの絶対パスやdocs、利用先へのフロー本文のコピーを必要としない。専門スキルへの相対リンクは同じ親ディレクトリに置く構成で解決する。存在しない工程別ファイルやtask CLIへのリンク・コマンドを追加しない。
 
@@ -51,7 +51,7 @@ checkpointは既存スキルの保存手順に任せ、作業ログの正本に�
 
 | 確認 | 結果と確認できる範囲 |
 | --- | --- |
-| skill-creatorのquick_validate.py | development-workflow、use-principlesとも成功。frontmatter・名前・未完成のひな形の検出を確認 |
+| skill-creatorのquick_validate.py | devlow、use-principlesとも成功。frontmatter・名前・未完成のひな形の検出を確認 |
 | 配布先を模したコピー | リポジトリ外の一時ディレクトリに7スキルをコピーし、変更したスキル本文のローカルリンク9件とテンプレートの入口がコピー内で解決することを確認。開発元の絶対パス・docs・開発用スキルへの依存なし |
 | 文書の参照とライセンス | 変更した設計・保守資料のローカルリンクが存在。移動した手順のLICENSEが元と一致 |
 | 代表的な依頼 | 上表の8ケースを本文と照合。工程選択、保存条件、権限、未完了の扱いを机上で確認 |
@@ -81,7 +81,7 @@ checkpointは既存スキルの保存手順に任せ、作業ログの正本に�
 
 ### 依頼整理を追加した後の検証
 
-development-workflowのquick_validate.pyとgit diff --checkが成功。配布先を模したリポジトリ外のコピーで、変更した4ファイルからのローカルリンク11件が解決し、開発元の絶対パス・docs・開発用スキルへの依存がないことを確認した。文書の参照先とひな形の表の列数も確認した。
+devlowのquick_validate.pyとgit diff --checkが成功。配布先を模したリポジトリ外のコピーで、変更した4ファイルからのローカルリンク11件が解決し、開発元の絶対パス・docs・開発用スキルへの依存がないことを確認した。文書の参照先とひな形の表の列数も確認した。
 
 Obsidianの冒頭にユーザーが追記したpstackとの比較表を保持し、設計本文だけを同期した。CLIと既存の専門スキルはこの工程追加では変更していない。
 
@@ -106,7 +106,7 @@ CLIを使わない場合、子のtask.mdが自分の進捗を持ち、親の計�
 
 実エージェントによる並行更新やCLIの排他動作を検証したものではない。今回の変更は配布用の指示と設計資料であり、タスク管理CLIは実装していない。
 
-development-workflowのquick_validate.pyとgit diff --checkが成功。リポジトリ外にコピーしたスキル群で、4つの配布用Markdownからのローカルリンク11件が解決し、開発元の絶対パス・docs・開発用スキルへの依存がないことを確認した。設計資料の参照先も確認した。Obsidianは冒頭のユーザー追記と比較表を保持して設計本文だけを同期し、正本との一致とリンクを確認した。
+devlowのquick_validate.pyとgit diff --checkが成功。リポジトリ外にコピーしたスキル群で、4つの配布用Markdownからのローカルリンク11件が解決し、開発元の絶対パス・docs・開発用スキルへの依存がないことを確認した。設計資料の参照先も確認した。Obsidianは冒頭のユーザー追記と比較表を保持して設計本文だけを同期し、正本との一致とリンクを確認した。
 
 ## OKFをシステムの設計と歴史で整理する
 
@@ -118,7 +118,7 @@ development-workflowのquick_validate.pyとgit diff --checkが成功。リポジ
 
 机上確認では、採用済み・未実装の設計、複数子タスクによる移行、効果がなく戻した変更、単なるテスト実行、既存の作業結果文書を参照する場合を照合した。検証は文書の形式・参照・設計間の整合性を対象とし、実エージェントやCLIの動作を測定するものではない。
 
-development-workflowのquick_validate.pyとgit diff --checkが成功。リポジトリ外のコピーで4つの配布用Markdownのローカルリンク11件が解決し、開発元の絶対パスへの依存がないことを確認した。設計・一覧・調査・実装記録とObsidianのローカルリンク66件も確認した。コピー検査の初回はmacOSの一時ディレクトリのシンボリックリンク表記差で失敗したため、検査側の基準パスを正規化して再実行した。Obsidianはユーザーの比較表を保持して設計本文を同期した。
+devlowのquick_validate.pyとgit diff --checkが成功。リポジトリ外のコピーで4つの配布用Markdownのローカルリンク11件が解決し、開発元の絶対パスへの依存がないことを確認した。設計・一覧・調査・実装記録とObsidianのローカルリンク66件も確認した。コピー検査の初回はmacOSの一時ディレクトリのシンボリックリンク表記差で失敗したため、検査側の基準パスを正規化して再実行した。Obsidianはユーザーの比較表を保持して設計本文を同期した。
 
 ## task.mdの作成対象と説明資料の絞り込み
 
