@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 
 const cli = resolve(import.meta.dir, "../scripts/okf.ts");
 let project: string;
 beforeEach(async () => { project = await mkdtemp(join(tmpdir(), "okf-cli-")); });
 afterEach(async () => { await rm(project, { recursive: true, force: true }); });
-async function run(args: string[], executable = cli) {
-  const p = Bun.spawn([process.execPath, "--no-install", executable, ...args], { cwd: project, stdout: "pipe", stderr: "pipe" });
+async function run(args: string[], executable = cli, env = process.env) {
+  const p = Bun.spawn([process.execPath, "--no-install", executable, ...args], { cwd: project, env, stdout: "pipe", stderr: "pipe" });
   const [code, stdout, stderr] = await Promise.all([p.exited, new Response(p.stdout).text(), new Response(p.stderr).text()]);
   return { code, stdout, stderr };
 }
@@ -181,13 +181,10 @@ test.each(["init", "search", "show", "create", "update", "delete", "relate", "va
 });
 test("distributed skill runs offline with its installed dependency outside this repository", async () => {
   const distributed = join(project, "distributed");
+  expect((await run(["version", "--json"])).code).toBe(0);
   await cp(resolve(import.meta.dir, "../scripts"), join(distributed, "scripts"), { recursive: true });
-  await cp(resolve(import.meta.dir, "../package.json"), join(distributed, "package.json"));
-  // Stage the already-installed package so this test neither downloads nor relies on Bun auto-install.
-  const dependency = resolve(dirname(Bun.resolveSync("minisearch", import.meta.dir)), "../..");
-  await cp(dependency, join(distributed, "node_modules/minisearch"), { recursive: true });
   const copied = join(distributed, "scripts/okf.ts");
-  const version = await run(["version", "--json"], copied);
+  const version = await run(["version", "--json"], copied, { ...process.env, npm_config_registry: "http://127.0.0.1:9", BUN_INSTALL_CACHE_DIR: join(project, "empty-cache") });
   expect(version.stderr).toBe("");
   expect(version.code).toBe(0);
   expect(JSON.parse(version.stdout)).toMatchObject({ version: "0.1.0", okf_version: "0.2" });

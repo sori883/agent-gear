@@ -1,0 +1,22 @@
+import { parseArgs } from "node:util";
+import { resolve } from "node:path";
+import { runSetup } from "./lib/setup.ts";
+import { SetupError } from "./lib/model.ts";
+
+export async function main(args = process.argv.slice(2)): Promise<number> {
+  let compact = args.includes("--json");
+  try {
+    const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { project: { type: "string" }, json: { type: "boolean" }, help: { type: "boolean", short: "h" } } });
+    compact = values.json ?? false;
+    if (values.help) { console.log("Usage: bun <setup-skill>/scripts/setup.ts <plan|apply|status> --project <directory> [--json]\nplan/status are read-only for the project. apply writes only declared files and managed instruction blocks.\nThe plugin root is determined from this script's location; setup-manifest.json must be present there."); return 0; }
+    const command = positionals[0];
+    if (positionals.length !== 1 || !["plan", "apply", "status"].includes(command ?? "")) throw new SetupError("INPUT", "Specify exactly one command: plan, apply, or status");
+    if (!values.project?.trim()) throw new SetupError("INPUT", "--project is required");
+    const data = await runSetup({ command: command as "plan" | "apply" | "status", project: resolve(values.project), pluginRoot: resolve(import.meta.dir, "../../..") });
+    console.log(JSON.stringify({ ok: true, data }, null, compact ? undefined : 2)); return 0;
+  } catch (error) {
+    const code = error instanceof SetupError ? error.code : (error as NodeJS.ErrnoException).code?.startsWith("ERR_PARSE_ARGS") ? "INPUT" : error instanceof SyntaxError ? "INVALID_DATA" : "IO";
+    console.log(JSON.stringify({ ok: false, error: { code, message: error instanceof Error ? error.message : String(error), ...(error instanceof SetupError && error.details ? { details: error.details } : {}) } }, null, compact ? undefined : 2));
+    return ["LOCKED", "CONFLICT", "PARTIAL"].includes(code) ? 3 : ["IO"].includes(code) ? 1 : 2;
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "agent-gear",
+  "interface": {
+    "displayName": "Agent Gear"
+  },
+  "plugins": [
+    {
+      "name": "agent-gear",
+      "source": {
+        "source": "local",
+        "path": "./dist/codex/agent-gear"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

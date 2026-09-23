@@ -1,0 +1,226 @@
+/*
+ * VSCode Markdown プレビュー用テーマ(Kindle セピア風・テーマ非追従)
+ * 元は https://github.com/sori883/marp-slide の theme.css から移植。
+ *
+ * VSCode のライト/ダークテーマは完全に無視する。
+ * プレビューの標準スタイルはすべて --vscode-* 変数を参照しているため、
+ * その変数自体を !important で上書きすることでテーマの影響を遮断する。
+ */
+
+:root,
+body {
+  /* ---- パレット ---- */
+  --color-bg: #fbf0d9;          /* Kindle セピア風の背景 */
+  --color-bg-sub: #f2e4c2;      /* 縞・コードブロック等の面 */
+  --color-text: #3b3427;        /* 本文: 暖色寄りのダークブラウン */
+  --color-text-light: #7a6e58;
+  --color-border: #d9caa8;
+  --color-primary: #2b5f6e;     /* アクセント: 深い青緑 */
+  --color-primary-light: #3d7a8a;
+  --color-accent: #3d7a8a;
+  --font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+
+  /* ---- VSCode テーマ変数の上書き(テーマ遮断の本体) ---- */
+  --vscode-editor-background: var(--color-bg) !important;
+  --vscode-editor-foreground: var(--color-text) !important;
+  --vscode-foreground: var(--color-text) !important;
+  --vscode-textLink-foreground: var(--color-primary-light) !important;
+  --vscode-textLink-activeForeground: var(--color-primary) !important;
+  --vscode-textCodeBlock-background: var(--color-bg-sub) !important;
+  --vscode-textPreformat-foreground: #244d59 !important;
+  --vscode-textPreformat-background: var(--color-bg-sub) !important;
+  --vscode-textBlockQuote-background: #f3e6c4 !important;
+  --vscode-textBlockQuote-border: var(--color-accent) !important;
+  --vscode-textSeparator-foreground: var(--color-border) !important;
+}
+
+html,
+body,
+body.vscode-body,
+body.vscode-body.vscode-light,
+body.vscode-body.vscode-dark,
+body.vscode-body.vscode-high-contrast {
+  font-family: var(--font-family) !important;
+  color: var(--color-text) !important;
+  background-color: var(--color-bg) !important;
+  line-height: 1.7;
+}
+
+/* ==================== 見出し ==================== */
+h1 {
+  color: var(--color-primary) !important;
+  border-bottom: 2px solid var(--color-primary-light) !important;
+  padding-bottom: 0.3em;
+  margin-bottom: 0.6em;
+}
+
+h2 {
+  color: var(--color-primary) !important;
+  border-bottom: none !important;
+  margin-bottom: 0.5em;
+}
+
+h3 {
+  color: var(--color-primary) !important;
+  margin-bottom: 0.4em;
+}
+
+h4,
+h5,
+h6 {
+  color: var(--color-text-light) !important;
+}
+
+/* ==================== 段落・リスト ==================== */
+p,
+li {
+  color: var(--color-text) !important;
+}
+
+ul,
+ol {
+  margin: 8px 0;
+  padding-left: 1.5em;
+}
+
+li {
+  margin-bottom: 6px;
+}
+
+ul > li::marker {
+  color: var(--color-primary) !important;
+}
+
+ol > li::marker {
+  color: var(--color-primary) !important;
+  font-weight: 600;
+}
+
+ul ul,
+ol ul {
+  list-style-type: disc;
+  margin-top: 4px;
+}
+
+ul ul > li::marker {
+  color: var(--color-primary-light) !important;
+}
+
+/* ==================== コード ==================== */
+code {
+  background-color: var(--color-bg-sub) !important;
+  color: #244d59 !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+pre {
+  background-color: var(--color-bg-sub) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 16px 0;
+}
+
+pre code,
+pre code span {
+  /* シンタックスハイライトはテーマ色になるため無効化して単色で表示 */
+  background-color: transparent !important;
+  color: var(--color-text) !important;
+  padding: 0;
+  font-size: 0.95em;
+  line-height: 1.5;
+}
+
+/* ==================== テーブル ==================== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+table th {
+  background-color: var(--color-primary) !important;
+  color: #fbf5e6 !important;
+  padding: 8px 14px;
+  text-align: left;
+  font-weight: 600;
+  border: none !important;
+}
+
+table td {
+  padding: 8px 14px;
+  border: none !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+
+table tr,
+table tr:nth-child(odd) td {
+  background-color: var(--color-bg) !important;
+}
+
+table tr:nth-child(even) td {
+  background-color: var(--color-bg-sub) !important;
+}
+
+/* ==================== 引用 ==================== */
+blockquote {
+  border-left: 4px solid var(--color-accent) !important;
+  background-color: #f3e6c4 !important;
+  padding: 12px 20px;
+  margin: 16px 0;
+  border-radius: 0 6px 6px 0;
+  font-style: italic;
+  color: var(--color-text-light) !important;
+}
+
+blockquote p {
+  margin: 0;
+  color: var(--color-text-light) !important;
+}
+
+/* ==================== リンク ==================== */
+a,
+a code {
+  color: var(--color-primary-light) !important;
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--color-primary) !important;
+  text-decoration: underline;
+}
+
+/* ==================== 画像 ==================== */
+img {
+  max-width: 100%;
+  display: block;
+  margin: 10px auto;
+  border-radius: 6px;
+}
+
+/* ==================== 強調テキスト ==================== */
+strong {
+  color: var(--color-primary) !important;
+  font-weight: 700;
+}
+
+em {
+  color: var(--color-text-light) !important;
+}
+
+mark {
+  background-color: #e8d48f !important;
+  color: #453c28 !important;
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+/* ==================== 水平線 ==================== */
+hr {
+  border: none !important;
+  border-top: 2px solid var(--color-border) !important;
+  margin: 24px 0;
+}

@@ -1,4 +1,4 @@
 # 開発ルール
 
-- 開発作業では、プロジェクトルートからの相対パス `skills/use-principles/SKILL.md` を読み、その運用ルールに従う。
-- スキルの手順で、OKF bundle `.space/babel/` のルールと原則を、それぞれ `search --type rule --all` と `search --type principle --all` で全件検索する。descriptionから今回の作業に合致する文書を選び、その本文を `show` で読んで適用条件とgovernanceに従う。
+- 開発作業では、プロジェクトルートからの相対パス `skills/devlow/SKILL.md` を読み、依頼の種類・規模・リスクに応じて工程と成果物を選ぶ。
+- 全体フローから `skills/use-principles/SKILL.md` を使い、OKF bundle `.space/babel/` のルールと原則を確認する。選んだ文書の本文を読み、適用条件とgovernanceに従う。
