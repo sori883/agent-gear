@@ -11,13 +11,13 @@ async function fixture() {
   const pluginRoot = join(root, "plugin"), project = join(root, "consumer");
   await mkdir(join(pluginRoot, "templates"), { recursive: true }); await mkdir(project);
   const files = [
-    { source: "templates/rule.md", destination: ".space/babel/vendor/agent-gear/rules/rule.md", mode: "copy" },
+    { source: "templates/rule.md", destination: ".space/babel/rules/rule.md", mode: "copy" },
     { source: "templates/instructions.md", destination: "AGENTS.md", mode: "managed-block" }
   ];
   const manifest = { schemaVersion: 1, plugin: "agent-gear", product: "codex", version: "1.0.0", files };
   await writeFile(join(pluginRoot, "setup-manifest.json"), JSON.stringify(manifest));
   await writeFile(join(pluginRoot, "templates/rule.md"), "version one\n");
-  await writeFile(join(pluginRoot, "templates/instructions.md"), "Use {{SKILL_ROOT}} and {{VENDOR_BUNDLE}}.\n");
+  await writeFile(join(pluginRoot, "templates/instructions.md"), "Use {{SKILL_ROOT}} and {{BABEL_BUNDLE}}.\n");
   const run = (command: "plan" | "apply" | "status") => runSetup({ command, project, pluginRoot });
   return { root, project, pluginRoot, manifest, run, copy: join(project, files[0]!.destination) };
 }
@@ -30,8 +30,133 @@ test("plan is read-only; apply creates files once and preserves existing instruc
   await f.run("apply");
   const first = await readFile(join(f.project, "AGENTS.md"), "utf8");
   expect(first).toStartWith("User instructions\n"); expect(first).toContain(join(f.pluginRoot, "skills"));
+  expect(first).toContain(join(f.project, ".space/babel")); expect(first).not.toContain("{{");
   await f.run("apply"); expect(await readFile(join(f.project, "AGENTS.md"), "utf8")).toBe(first);
   expect((await f.run("status")).actions.every((a: any) => a.action === "unchanged")).toBe(true);
+});
+
+async function addSharedFiles(f: Awaited<ReturnType<typeof fixture>>) {
+  for (const [name, mode, content] of [
+    ["index.md", "merge-index", '---\nokf_version: "0.2"\n---\n\n# Knowledge Base\n* [rules](rules/index.md)\n'],
+    ["rules/index.md", "merge-index", "# rules\n* [Rule](rule.md) - Shared rule\n"],
+    ["log.md", "seed", "# Document history\n"],
+    ["LICENSE", "seed", "Shared license\n"],
+  ]) {
+    const source = `space/babel/${name}`;
+    await mkdir(join(f.pluginRoot, source, ".."), { recursive: true });
+    await writeFile(join(f.pluginRoot, source), content!);
+    f.manifest.files.push({ source, destination: `.space/babel/${name}`, mode: mode! });
+  }
+  await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
+}
+
+test("existing Babel navigation, history, license and own documents survive install and later edits", async () => {
+  const f = await fixture(); await addSharedFiles(f);
+  await mkdir(join(f.project, ".space/babel/rules"), { recursive: true });
+  const rootIndex = '---\nokf_version: "0.2"\nowner: consumer\n---\n\n# My knowledge\n* [My rules](./rules/index.md)\n';
+  await writeFile(join(f.project, ".space/babel/index.md"), rootIndex);
+  const localIndex = "# My rules\n\nLocal explanation.\n* [Own](own.md) - Local rule\n";
+  await writeFile(join(f.project, ".space/babel/rules/index.md"), localIndex);
+  await writeFile(join(f.project, ".space/babel/rules/own.md"), "own content\n");
+  await writeFile(join(f.project, ".space/babel/log.md"), "My history\n");
+  await writeFile(join(f.project, ".space/babel/LICENSE"), "My license\n");
+  await f.run("apply");
+  expect(await readFile(join(f.project, ".space/babel/index.md"), "utf8")).toBe(rootIndex);
+  const installedIndex = await readFile(join(f.project, ".space/babel/rules/index.md"), "utf8");
+  expect(installedIndex).toStartWith(localIndex); expect(installedIndex).toContain("* [Rule](rule.md) - Shared rule");
+  await writeFile(join(f.project, ".space/babel/rules/index.md"), installedIndex + "\nMore project notes.\n");
+  await writeFile(join(f.project, ".space/babel/log.md"), "My updated history\n");
+  await f.run("apply");
+  expect(await readFile(join(f.project, ".space/babel/rules/index.md"), "utf8")).toEndWith("More project notes.\n");
+  expect(await readFile(join(f.project, ".space/babel/log.md"), "utf8")).toBe("My updated history\n");
+  expect(await readFile(join(f.project, ".space/babel/LICENSE"), "utf8")).toBe("My license\n");
+  expect(await readFile(join(f.project, ".space/babel/rules/own.md"), "utf8")).toBe("own content\n");
+  expect((await f.run("status")).actions.every(a => a.action === "unchanged")).toBe(true);
+});
+
+test("shared index updates refresh unchanged listings and stop on competing local edits", async () => {
+  const f = await fixture(); await addSharedFiles(f); await f.run("apply");
+  const index = join(f.project, ".space/babel/rules/index.md");
+  await writeFile(join(f.pluginRoot, "space/babel/rules/index.md"), "# rules\n* [Rule v2](rule.md) - Updated rule\n");
+  await f.run("apply");
+  expect(await readFile(index, "utf8")).toContain("Rule v2");
+  await writeFile(index, (await readFile(index, "utf8")).replace("Updated rule", "Local summary"));
+  await f.run("apply"); // Local index edits alone do not block setup.
+  await writeFile(join(f.pluginRoot, "space/babel/rules/index.md"), "# rules\n* [Rule v3](rule.md) - New upstream summary\n");
+  await expect(f.run("apply")).rejects.toThrow("conflict");
+  expect(await readFile(index, "utf8")).toContain("Local summary");
+});
+
+test("shared index merge does not mistake fenced examples for navigation and adds OKF metadata without erasing prose", async () => {
+  const f = await fixture(); await addSharedFiles(f);
+  await mkdir(join(f.project, ".space/babel"), { recursive: true });
+  const original = '# My notes\n\n```markdown\n* [rules](rules/index.md)\n```\n';
+  await writeFile(join(f.project, ".space/babel/index.md"), original);
+  await f.run("apply");
+  const merged = await readFile(join(f.project, ".space/babel/index.md"), "utf8");
+  expect(merged).toStartWith('---\nokf_version: "0.2"\n---\n');
+  expect(merged).toContain(original); expect(merged).toEndWith('* [rules](rules/index.md)\n');
+  await f.run("apply"); expect(await readFile(join(f.project, ".space/babel/index.md"), "utf8")).toBe(merged);
+});
+
+test("shared modes cannot be used to overwrite knowledge or other project paths", async () => {
+  const f = await fixture();
+  for (const [destination, mode] of [[".space/babel/rules/rule.md", "seed"], [".space/babel/rules/rule.md", "merge-index"], [".space/babel/vendor/other/index.md", "merge-index"], [".space/babel/index.md", "copy"], [".space/tasks/log.md", "seed"]]) {
+    Object.assign(f.manifest.files[0]!, { destination, mode });
+    await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
+    await expect(f.run("apply")).rejects.toThrow("outside allowed");
+  }
+});
+
+test("invalid shared indexes stop before any file is placed", async () => {
+  const f = await fixture(); await addSharedFiles(f);
+  await mkdir(join(f.project, ".space/babel"), { recursive: true });
+  const index = join(f.project, ".space/babel/index.md");
+  for (const text of ['---\nokf_version: "0.1"\n---\n', '---\nunterminated header\n', '# Index\n```md\n', '# Index\n<!-- unfinished\n']) {
+    await writeFile(index, text);
+    await expect(f.run("apply")).rejects.toThrow("conflict");
+    expect(await readFile(index, "utf8")).toBe(text);
+    expect(await Bun.file(f.copy).exists()).toBe(false);
+  }
+});
+
+for (const product of ["codex", "claude-code", "copilot"]) test(`${product} upgrades vendor installs without deleting old files and protects edits before migration`, async () => {
+  const f = await fixture();
+  f.manifest.product = product;
+  f.manifest.files[1]!.destination = product === "codex" ? "AGENTS.md" : product === "claude-code" ? "CLAUDE.md" : ".github/copilot-instructions.md";
+  const entry = f.manifest.files[0]!, direct = entry.destination;
+  entry.destination = direct.replace(".space/babel/", ".space/babel/vendor/agent-gear/");
+  await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
+  await f.run("apply");
+  const legacy = join(f.project, entry.destination);
+  await writeFile(legacy, "local vendor edit\n");
+  entry.destination = direct; f.manifest.version = "2.0.0";
+  await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
+  await expect(f.run("apply")).rejects.toThrow("conflict");
+  expect(await Bun.file(f.copy).exists()).toBe(false); expect(await readFile(legacy, "utf8")).toBe("local vendor edit\n");
+  await writeFile(legacy, "version one\n");
+  await f.run("apply");
+  expect(await readFile(f.copy, "utf8")).toBe("version one\n"); expect(await readFile(legacy, "utf8")).toBe("version one\n");
+  expect((await f.run("status")).conflicts).toEqual([]);
+});
+
+test("migration checks another product's legacy installation and untracked vendor content", async () => {
+  const f = await fixture(), direct = f.manifest.files[0]!.destination;
+  f.manifest.files[0]!.destination = direct.replace(".space/babel/", ".space/babel/vendor/agent-gear/");
+  await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
+  await f.run("apply");
+  const legacy = join(f.project, f.manifest.files[0]!.destination);
+  f.manifest.files[0]!.destination = direct;
+  await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
+  await addCopilot(f);
+  await writeFile(legacy, "local edit from Codex\n");
+  const copilot = () => runSetup({ command: "apply", project: f.project, pluginRoot: f.pluginRoot, product: "copilot" });
+  await expect(copilot()).rejects.toThrow("conflict");
+  expect(await Bun.file(join(f.project, ".github/copilot-instructions.md")).exists()).toBe(false);
+  await rm(join(f.project, ".space/setup/agent-gear-codex.json"));
+  await expect(copilot()).rejects.toThrow("conflict");
+  await writeFile(legacy, "version one\n"); await copilot();
+  expect(await readFile(f.copy, "utf8")).toBe("version one\n");
 });
 
 test("updates managed source and preserves edits outside its instruction block", async () => {
@@ -60,10 +185,10 @@ test("refuses source and destination traversal and symlinks", async () => {
   await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
   await expect(f.run("plan")).rejects.toThrow();
   f.manifest.files[0]!.source = "templates/rule.md";
-  f.manifest.files[0]!.destination = ".space/babel/vendor/agent-gear/../other/rule.md";
+  f.manifest.files[0]!.destination = ".space/babel/../other/rule.md";
   await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
   await expect(f.run("apply")).rejects.toThrow();
-  f.manifest.files[0]!.destination = ".space/babel/vendor/agent-gear/rules/rule.md";
+  f.manifest.files[0]!.destination = ".space/babel/rules/rule.md";
   await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
   await symlink(join(f.pluginRoot, "templates"), join(f.project, ".space"));
   await expect(f.run("apply")).rejects.toThrow("symlink");
@@ -100,7 +225,7 @@ test("an edited or duplicated managed block is a conflict; unrelated existing fi
 });
 
 test("existing unmanaged file conflicts before any metadata or destination is written", async () => {
-  const f = await fixture(); await mkdir(join(f.project, ".space/babel/vendor/agent-gear/rules"), { recursive: true });
+  const f = await fixture(); await mkdir(join(f.project, ".space/babel/rules"), { recursive: true });
   await writeFile(f.copy, "user-owned"); await expect(f.run("apply")).rejects.toThrow("conflict");
   expect(await Bun.file(join(f.project, "AGENTS.md")).exists()).toBe(false);
   expect(await Bun.file(join(f.project, ".space/setup/agent-gear-codex.json")).exists()).toBe(false);
@@ -147,7 +272,7 @@ test("Codex agent definition preserves user files and updates only managed conte
   expect(await readFile(join(f.project, ".codex/agents/custom.toml"), "utf8")).toBe("custom");
 });
 
-test("both products converge on identical vendor updates while protecting different local edits", async () => {
+test("both products converge on identical Babel updates while protecting different local edits", async () => {
   const f = await fixture(), claudeRoot = join(f.root, "claude");
   await cp(f.pluginRoot, claudeRoot, { recursive: true });
   const claudeManifest = { ...f.manifest, product: "claude-code", files: f.manifest.files.map(e => ({ ...e, destination: e.destination === "AGENTS.md" ? "CLAUDE.md" : e.destination })) };
@@ -186,7 +311,7 @@ async function addCopilot(f: Awaited<ReturnType<typeof fixture>>) {
   return manifest;
 }
 
-test("Copilot CLI selection preserves existing instructions, isolates state, and converges on shared vendor updates", async () => {
+test("Copilot CLI selection preserves existing instructions, isolates state, and converges on shared Babel updates", async () => {
   const f = await fixture(), entry = await copyCLI(f), copilot = await addCopilot(f);
   const path = join(f.project, ".github/copilot-instructions.md");
   await mkdir(join(f.project, ".github")); await writeFile(path, "User Copilot instructions\n");
@@ -264,19 +389,23 @@ test("copied real CLI uses its own manifest/runtime and requires explicit projec
 });
 
 test("actual killed CLI leaves recoverable pending writes and does not replace unrelated edits", async () => {
-  const f = await fixture(), entry = await copyCLI(f); await f.run("apply");
+  const f = await fixture(); await addSharedFiles(f); const entry = await copyCLI(f); await f.run("apply");
+  await writeFile(join(f.pluginRoot, "space/babel/rules/index.md"), "# rules\n* [Updated](rule.md) - Changed description\n");
   await cli(entry, ["status", "--project", f.project, "--json"], f.root);
-  const folder = join(f.project, ".space/babel/vendor/agent-gear/rules");
+  const folder = join(f.project, ".space/babel/rules");
   for (let i = 0; i < 40; i++) {
-    const source = `templates/extra-${i}.md`, destination = `.space/babel/vendor/agent-gear/rules/extra-${i}.md`;
+    const source = `templates/extra-${i}.md`, destination = `.space/babel/rules/extra-${i}.md`;
     f.manifest.files.push({ source, destination, mode: "copy" }); await writeFile(join(f.pluginRoot, source), `content-${i}\n`.repeat(1000));
   }
   await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
-  let killed = false;
+  let killed = false, stop = () => {};
+  const observer = watch(folder, (_event, name) => { if (name === "extra-0.md") { killed = true; stop(); } });
   const process = Bun.spawn([Bun.which("bun")!, entry, "apply", "--project", f.project, "--json"], { stdout: "pipe", stderr: "pipe" });
-  const observer = watch(folder, (_event, name) => { if (name === "extra-0.md") { killed = true; process.kill("SIGKILL"); } });
-  try { await process.exited; } finally { observer.close(); }
-  expect(killed).toBe(true);
+  stop = () => { process.kill("SIGKILL"); };
+  try {
+    const [code, out, err] = await Promise.all([process.exited, new Response(process.stdout).text(), new Response(process.stderr).text()]);
+    if (!killed) throw new Error(`Writer exited before interruption: ${code}\n${out}\n${err}`);
+  } finally { observer.close(); }
   const pendingPath = join(f.project, ".space/setup/agent-gear-codex.pending.json"); expect(await Bun.file(pendingPath).exists()).toBe(true);
   expect((await f.run("status")).pending).toBe(true);
   // Only after the writer is confirmed stopped may its abandoned lock be removed.
@@ -286,4 +415,5 @@ test("actual killed CLI leaves recoverable pending writes and does not replace u
   await writeFile(first, original); await f.run("apply");
   expect(await Bun.file(pendingPath).exists()).toBe(false); expect((await f.run("status")).conflicts).toEqual([]);
   expect(await readFile(join(folder, "extra-39.md"), "utf8")).toBe("content-39\n".repeat(1000));
+  expect(await readFile(join(folder, "index.md"), "utf8")).toContain("Changed description");
 }, 10000);

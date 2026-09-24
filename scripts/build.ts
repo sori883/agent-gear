@@ -1,6 +1,7 @@
 import { lstat, mkdir, open, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, posix, resolve } from "node:path";
 import { instructionFiles } from "../skills/setup/scripts/lib/model.ts";
+import type { Entry } from "../skills/setup/scripts/lib/model.ts";
 
 type Files = Map<string, Buffer>;
 const products = ["codex", "claude-code"] as const;
@@ -73,9 +74,9 @@ export async function distribution(root: string): Promise<Files> {
     if (product === "claude-code") {
       for (const [, body] of await filesAt(join(root, "packaging/copilot/templates/copilot-instructions.md"))) files.set("templates/copilot-instructions.md", body);
     }
-    const setupFiles: { source: string; destination: string; mode: "copy" | "managed-block" }[] = [];
+    const setupFiles: Entry[] = [];
     for (const path of [...files.keys()].sort()) {
-      if (path.startsWith("space/babel/")) setupFiles.push({ source: path, destination: `.space/babel/vendor/${name}/${path.slice("space/babel/".length)}`, mode: "copy" });
+      if (path.startsWith("space/babel/")) setupFiles.push({ source: path, destination: `.${path}`, mode: posix.basename(path) === "index.md" ? "merge-index" : ["space/babel/log.md", "space/babel/LICENSE"].includes(path) ? "seed" : "copy" });
       if (product === "codex" && path.startsWith("templates/agents/")) setupFiles.push({ source: path, destination: `.codex/agents/${path.slice("templates/agents/".length)}`, mode: "copy" });
     }
     for (const target of product === "claude-code" ? ["claude-code", "copilot"] as const : ["codex"] as const) {

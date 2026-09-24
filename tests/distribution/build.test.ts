@@ -36,7 +36,7 @@ test("builds both self-contained products and creates catalogs with the root ver
     expect(await Bun.file(join(dist, "skills/example/scripts/main.ts")).exists()).toBe(true);
     for (const path of ["docs/private.md", ".space/babel/private.md", "skills/example/tests/private.test.ts", "skills/example/scripts/node_modules/private/index.js"]) expect(await Bun.file(join(dist, path)).exists()).toBe(false);
     const setup = JSON.parse(await readFile(join(dist, "setup-manifest.json"), "utf8"));
-    expect(setup.files).toContainEqual({ source: "space/babel/index.md", destination: ".space/babel/vendor/agent-gear/index.md", mode: "copy" });
+    expect(setup.files).toContainEqual({ source: "space/babel/index.md", destination: ".space/babel/index.md", mode: "merge-index" });
     expect(setup.product).toBe(product);
   }
   const codex = JSON.parse(await readFile(join(root, ".agents/plugins/marketplace.json"), "utf8"));
@@ -46,7 +46,7 @@ test("builds both self-contained products and creates catalogs with the root ver
   const copilot = JSON.parse(await readFile(join(root, "dist/claude-code/agent-gear/setup-manifest.copilot.json"), "utf8"));
   expect(copilot).toMatchObject({ schemaVersion: 1, plugin: "agent-gear", product: "copilot", version: "1.2.3" });
   expect(copilot.files).toContainEqual({ source: "templates/copilot-instructions.md", destination: ".github/copilot-instructions.md", mode: "managed-block" });
-  expect(copilot.files).toContainEqual({ source: "space/babel/index.md", destination: ".space/babel/vendor/agent-gear/index.md", mode: "copy" });
+  expect(copilot.files).toContainEqual({ source: "space/babel/index.md", destination: ".space/babel/index.md", mode: "merge-index" });
   expect(copilot.files.some((entry: { destination: string }) => entry.destination === "CLAUDE.md")).toBe(false);
   expect(await Bun.file(join(root, "dist/claude-code/agent-gear/templates/copilot-instructions.md")).text()).toContain("in Copilot");
   expect(await Bun.file(join(root, "dist/codex/agent-gear/setup-manifest.copilot.json")).exists()).toBe(false);
