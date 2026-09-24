@@ -2,7 +2,7 @@
 
 agent-gearは、開発作業のフロー、タスク台帳、知識管理、プロジェクトへの導入をCodex・Claude Code・GitHub Copilot in VS Codeへ配布するプラグインである。CopilotはClaude形式の配布物を共用する。目的と配置方針の正本は[architecture.md](architecture.md)、導入・生成方法は[distribution.md](distribution.md)に置く。
 
-2026-09-24時点の作業ツリーを対象とする。以下はローカル実装の状態であり、最新変更のmainへの公開やリモートCIの成功を意味しない。詳細な検証結果は[配布の実装記録](distribution-implementation.md)と[Copilot対応記録](copilot-support.md)を参照する。
+2026-09-24時点の作業ツリーを対象とする。以下はローカル実装の状態であり、最新変更のmainへの公開やリモートCIの成功を意味しない。詳細な検証結果は[配布の実装記録](distribution-implementation.md)、[Copilot対応記録](copilot-support.md)、[Babel統合の記録](babel-distribution.md)を参照する。
 
 ## 提供するもの
 
@@ -14,7 +14,7 @@ agent-gearは、開発作業のフロー、タスク台帳、知識管理、プ�
 | setup | [スキル](../skills/setup/SKILL.md)と専用CLI。同梱文書と指示を既存のプロジェクトへ導入・更新する |
 | system-blueprint / how / why | システムの構成文書、動作の調査、設計理由の調査を担当する |
 | use-principles / checkpoint-safely | 原則の選択・適用と、中断・引き継ぎの保存を担当する |
-| 共通知識 | [space/babel](../space/babel/index.md)の23原則。実体は利用先のvendor bundleへ配置する |
+| 共通知識 | [space/babel](../space/babel/index.md)の23原則。実体は利用先の`.space/babel/`へ配置する |
 
 計9スキルを二つの形式の配布物へ同梱し、三製品で利用する。リポジトリの`.agents/skills/`と`.codex/agents/`は開発環境用であり、製品のエージェント定義として配布しない。現在は製品専用エージェント定義やhooksを追加していない。
 
@@ -38,7 +38,7 @@ agent-gearは、開発作業のフロー、タスク台帳、知識管理、プ�
 
 標準・大規模の依頼にはtask.mdを作る。大規模な依頼は同じ作業単位をorchのunitとして登録し、各担当が自身の進捗・確認記録・提出を更新する。親は提出の証拠を照合して受け入れる。JSONが台帳の正本であり、TSVとMarkdownはexportした一覧である。小規模な会話中の依頼には新規task.mdを必須にしない。
 
-作業中の依頼、計画、仮説、試行結果は`.space/tasks/`へ保存する。OKFの`.space/babel/`には、システムの構成、採用した設計と理由、重要な変遷を残す。原則として引き渡し工程が保存要否と重複を確認し、保存と検証を行う。配布元の共通知識は`.space/babel/vendor/agent-gear/`へ分け、プロジェクト固有の記録として検索・更新しない。
+作業中の依頼、計画、仮説、試行結果は`.space/tasks/`へ保存する。OKFの`.space/babel/`には、システムの構成、採用した設計と理由、重要な変遷を残す。原則として引き渡し工程が保存要否と重複を確認し、保存と検証を行う。配布元の共通知識も同じ`.space/babel/`から検索する。setupが配置した文書の更新はハッシュで管理し、プロジェクト固有の文書や編集を上書きしない。
 
 OKFのconceptはfrontmatter付きMarkdown一件、bundleはその集合を指す。typeはrule・principle・knowledge・procedure・decision。index.mdは目次、log.mdは文書操作の履歴であり、システムの歴史や作業ログの代わりにはならない。
 

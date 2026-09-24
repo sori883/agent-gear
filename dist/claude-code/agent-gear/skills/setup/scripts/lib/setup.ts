@@ -2,9 +2,10 @@ import { lstat, open, realpath, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import type { Manifest, State, Pending, Result, Entry, Operation, Product } from "./model.ts";
-import { isProduct, SetupError } from "./model.ts";
+import { instructionFiles, isProduct, SetupError } from "./model.ts";
 import { atomicWrite, hash, jsonBytes, readOptional, safeMkdir, safePath } from "./files.ts";
 import { parseManifest, parsePending, parseState } from "./validation.ts";
+import { mergeIndex } from "./index.ts";
 
 interface Context { project: string; pluginRoot: string; manifest: Manifest; manifestHash: string; statePath: string; pendingPath: string; lockPath: string }
 const digest = (value: Buffer | null) => value === null ? null : hash(value);
@@ -18,7 +19,7 @@ function block(content: Buffer | null, m: Manifest): { value: string | null; fro
   const to = ending + end.length; return { value: text.slice(from, to), from, to };
 }
 function managedHash(content: Buffer | null, entry: Entry, manifest: Manifest): string | null {
-  if (entry.mode === "copy") return digest(content);
+  if (entry.mode !== "managed-block") return digest(content);
   const value = block(content, manifest).value; return value === null ? null : hash(value);
 }
 async function context(project: string, pluginRoot: string, product?: Product): Promise<Context> {
@@ -56,6 +57,7 @@ async function plan(ctx: Context): Promise<{ result: Result; pending: Pending; s
     return { result, pending, stateBytes };
   }
   const nextState: State = { ...state, version: m.version, entries: [] }, operations: Operation[] = [];
+  let legacyStates: State[] | undefined;
   for (const entry of m.files) {
     const source = await readOptional(pluginRoot, entry.source); if (!source) throw new SetupError("SOURCE", `Missing source: ${entry.source}`);
     const current = await readOptional(project, entry.destination), previous = state.entries.find(e => e.destination === entry.destination);
@@ -64,17 +66,39 @@ async function plan(ctx: Context): Promise<{ result: Result; pending: Pending; s
     catch (error) { if (!(error instanceof SetupError) || error.code !== "BLOCK_CONFLICT") throw error; result.conflicts.push({ destination: entry.destination, reason: error.message }); continue; }
     let desired = source, desiredManaged: string;
     if (entry.mode === "managed-block") {
-      const text = source.toString("utf8").replaceAll("{{SKILL_ROOT}}", join(pluginRoot, "skills")).replaceAll("{{VENDOR_BUNDLE}}", join(project, ".space/babel/vendor", m.plugin));
+      const text = source.toString("utf8").replaceAll("{{SKILL_ROOT}}", join(pluginRoot, "skills")).replaceAll("{{BABEL_BUNDLE}}", join(project, ".space/babel")).replaceAll("{{VENDOR_BUNDLE}}", join(project, ".space/babel/vendor", m.plugin));
       const { start, end } = markers(m); if (text.includes(start) || text.includes(end)) throw new SetupError("SOURCE", "Template contains managed block markers");
       const managed = `${start}\n${text.trimEnd()}\n${end}`, old = block(current, m), outside = current?.toString("utf8") ?? "";
       desired = Buffer.from(old.value === null ? outside + (outside ? outside.endsWith("\n") ? "\n" : "\n\n" : "") + managed + "\n" : outside.slice(0, old.from) + managed + outside.slice(old.to));
       desiredManaged = hash(managed);
-    } else desiredManaged = hash(source);
-    if (previous && (previous.mode !== entry.mode || currentManaged !== previous.hash && currentManaged !== desiredManaged)) result.conflicts.push({ destination: entry.destination, reason: "Local edit or deletion differs from both the last installed and incoming content" });
-    else if (!previous && currentManaged !== null && currentManaged !== desiredManaged) result.conflicts.push({ destination: entry.destination, reason: "Existing content is not managed by this installation" });
+    } else {
+      if (entry.mode === "seed") desired = current ?? source;
+      if (entry.mode === "merge-index") {
+        try { desired = mergeIndex(source, current, previous?.indexSource); }
+        catch (error) { if (!(error instanceof SetupError) || error.code !== "INDEX_CONFLICT") throw error; result.conflicts.push({ destination: entry.destination, reason: error.message }); continue; }
+      }
+      desiredManaged = hash(desired);
+    }
+    const shared = entry.mode === "merge-index" || entry.mode === "seed";
+    if (previous && (previous.mode !== entry.mode || !shared && currentManaged !== previous.hash && currentManaged !== desiredManaged)) result.conflicts.push({ destination: entry.destination, reason: "Local edit or deletion differs from both the last installed and incoming content" });
+    else if (!previous && !shared && currentManaged !== null && currentManaged !== desiredManaged) result.conflicts.push({ destination: entry.destination, reason: "Existing content is not managed by this installation" });
+    if (!previous && entry.mode === "copy" && entry.destination.startsWith(".space/babel/") && !entry.destination.startsWith(".space/babel/vendor/")) {
+      const legacyPath = entry.destination.replace(".space/babel/", `.space/babel/vendor/${m.plugin}/`);
+      if (!legacyStates) {
+        legacyStates = [state];
+        for (const product of Object.keys(instructionFiles) as Product[]) {
+          if (product === m.product) continue;
+          const raw = await readOptional(project, `.space/setup/${m.plugin}-${product}.json`);
+          if (raw) legacyStates.push(parseState(JSON.parse(raw.toString()), { ...m, product }));
+        }
+      }
+      const legacy = legacyStates.flatMap(s => s.entries.filter(e => e.destination === legacyPath));
+      const legacyHash = digest(await readOptional(project, legacyPath));
+      if ((legacy.length || legacyHash !== null) && legacyHash !== desiredManaged && !legacy.some(e => e.hash === legacyHash)) result.conflicts.push({ destination: legacyPath, reason: "Legacy vendor document has local edits or was deleted; reconcile it with the Babel destination before updating" });
+    }
     const action = current === null ? "create" : current.equals(desired) ? "unchanged" : "update";
     result.actions.push({ destination: entry.destination, mode: entry.mode, action, reason: action === "unchanged" ? "Content matches" : previous ? "Managed source changed" : "Initial placement" });
-    nextState.entries.push({ ...entry, hash: desiredManaged });
+    nextState.entries.push({ ...entry, hash: desiredManaged, ...(entry.mode === "merge-index" ? { indexSource: source.toString("utf8") } : {}) });
     if (action !== "unchanged") operations.push({ destination: entry.destination, beforeHash: digest(current), content: desired.toString("base64") });
   }
   for (const old of state.entries.filter(e => !m.files.some(n => n.destination === e.destination))) { nextState.entries.push(old); result.actions.push({ destination: old.destination, mode: old.mode, action: "retain", reason: "Removed from the plugin; existing destination is preserved" }); }

@@ -7,12 +7,18 @@ function exact(value: Record<string, unknown>, keys: string[]) { for (const key 
 function text(value: unknown): string { if (typeof value !== "string" || !value.trim()) throw new SetupError("INVALID_DATA", "Expected nonempty text"); return value; }
 function digest(value: unknown): string { if (typeof value !== "string" || !/^[a-f0-9]{64}$/.test(value)) throw new SetupError("INVALID_DATA", "Invalid hash"); return value; }
 export function allowedEntry(value: unknown, manifest: Pick<Manifest, "plugin" | "product">, installed = false): Entry {
-  const entry = object(value); exact(entry, installed ? ["source", "destination", "mode", "hash"] : ["source", "destination", "mode"]);
+  const entry = object(value); exact(entry, installed ? ["source", "destination", "mode", "hash", "indexSource"] : ["source", "destination", "mode"]);
   const source = relativePath(entry.source), destination = relativePath(entry.destination);
-  if (entry.mode !== "copy" && entry.mode !== "managed-block") throw new SetupError("INVALID_DATA", "Invalid entry mode");
-  const allowed = entry.mode === "managed-block" ? destination === instructionFiles[manifest.product] : destination.startsWith(`.space/babel/vendor/${manifest.plugin}/`) || manifest.product === "codex" && destination.startsWith(".codex/agents/");
+  if (!["copy", "managed-block", "merge-index", "seed"].includes(String(entry.mode))) throw new SetupError("INVALID_DATA", "Invalid entry mode");
+  const index = /^\.space\/babel\/(?:(?:rules|principles|knowledge|procedures|decisions)\/(?:[^/]+\/)*)?index\.md$/.test(destination);
+  const document = /^\.space\/babel\/(rules|principles|knowledge|procedures|decisions)\/.+\.md$/.test(destination) && !/\/(index|log)\.md$/.test(destination);
+  const allowed = entry.mode === "managed-block" ? destination === instructionFiles[manifest.product]
+    : entry.mode === "merge-index" ? index
+    : entry.mode === "seed" ? [".space/babel/log.md", ".space/babel/LICENSE"].includes(destination)
+    : document || destination.startsWith(`.space/babel/vendor/${manifest.plugin}/`) || manifest.product === "codex" && destination.startsWith(".codex/agents/");
   if (!allowed) throw new SetupError("DESTINATION", `Destination is outside allowed locations: ${destination}`);
-  return { source, destination, mode: entry.mode };
+  if (entry.indexSource !== undefined && (entry.mode !== "merge-index" || typeof entry.indexSource !== "string")) throw new SetupError("INVALID_DATA", "Invalid index source baseline");
+  return { source, destination, mode: entry.mode as Entry["mode"] };
 }
 function identity(value: Record<string, unknown>) {
   if (value.schemaVersion !== 1 || typeof value.plugin !== "string" || !/^[a-z0-9][a-z0-9-]*$/.test(value.plugin) || !isProduct(value.product)) throw new SetupError("INVALID_DATA", "Invalid schema, plugin, or product");
@@ -31,7 +37,7 @@ export function parseState(value: unknown, manifest: Manifest): State {
   const s = object(value); exact(s, ["schemaVersion", "plugin", "product", "version", "entries"]); identity(s);
   if (s.plugin !== manifest.plugin || s.product !== manifest.product || !Array.isArray(s.entries)) throw new SetupError("INVALID_DATA", "State identity mismatch");
   const state = s as unknown as State;
-  state.entries = s.entries.map(value => { const entry = allowedEntry(value, manifest, true); return { ...entry, hash: digest(object(value).hash) }; });
+  state.entries = s.entries.map(value => { const entry = allowedEntry(value, manifest, true), raw = object(value); return { ...entry, hash: digest(raw.hash), ...(typeof raw.indexSource === "string" ? { indexSource: raw.indexSource } : {}) }; });
   noDuplicates(state.entries); return state;
 }
 export function parsePending(value: unknown, manifest: Manifest): Pending {

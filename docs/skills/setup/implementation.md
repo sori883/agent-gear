@@ -1,5 +1,7 @@
 # setupの設計と実装記録
 
+この文書は初期実装の記録である。共通知識の配置先と共有目次の管理方式は、[Babel統合の記録](../../babel-distribution.md)で更新した。
+
 2026-09-23。親の[配布設計](../../distribution-design.md)に従い、`skills/setup/`を実装する。開発対象としてorchのproject-setup unitを実際に開始し、担当自身が節目・検証・提出を記録する。
 
 ## 採用した構造
