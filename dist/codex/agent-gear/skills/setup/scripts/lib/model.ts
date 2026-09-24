@@ -1,5 +1,7 @@
 export type Mode = "copy" | "managed-block";
-export type Product = "codex" | "claude-code";
+export const instructionFiles = { codex: "AGENTS.md", "claude-code": "CLAUDE.md", copilot: ".github/copilot-instructions.md" } as const;
+export type Product = keyof typeof instructionFiles;
+export function isProduct(value: unknown): value is Product { return typeof value === "string" && Object.hasOwn(instructionFiles, value); }
 export interface Entry { source: string; destination: string; mode: Mode }
 export interface Manifest { schemaVersion: 1; plugin: string; product: Product; version: string; files: Entry[] }
 export interface Installed extends Entry { hash: string }

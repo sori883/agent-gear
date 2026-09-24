@@ -1,5 +1,6 @@
 import { lstat, mkdir, open, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join, posix, resolve } from "node:path";
+import { instructionFiles } from "../skills/setup/scripts/lib/model.ts";
 
 type Files = Map<string, Buffer>;
 const products = ["codex", "claude-code"] as const;
@@ -69,14 +70,20 @@ export async function distribution(root: string): Promise<Files> {
     manifest.version = version;
     files.set(product === "codex" ? ".codex-plugin/plugin.json" : ".claude-plugin/plugin.json", json(manifest));
     for (const part of ["templates", "agents", "assets"]) for (const [path, body] of await filesAt(join(source, part), true)) files.set(`${part}/${path}`, body);
+    if (product === "claude-code") {
+      for (const [, body] of await filesAt(join(root, "packaging/copilot/templates/copilot-instructions.md"))) files.set("templates/copilot-instructions.md", body);
+    }
     const setupFiles: { source: string; destination: string; mode: "copy" | "managed-block" }[] = [];
     for (const path of [...files.keys()].sort()) {
       if (path.startsWith("space/babel/")) setupFiles.push({ source: path, destination: `.space/babel/vendor/${name}/${path.slice("space/babel/".length)}`, mode: "copy" });
       if (product === "codex" && path.startsWith("templates/agents/")) setupFiles.push({ source: path, destination: `.codex/agents/${path.slice("templates/agents/".length)}`, mode: "copy" });
     }
-    const instruction = product === "codex" ? "AGENTS.md" : "CLAUDE.md";
-    if (files.has(`templates/${instruction}`)) setupFiles.push({ source: `templates/${instruction}`, destination: instruction, mode: "managed-block" });
-    files.set("setup-manifest.json", json({ schemaVersion: 1, plugin: name, product, version, files: setupFiles }));
+    for (const target of product === "claude-code" ? ["claude-code", "copilot"] as const : ["codex"] as const) {
+      const instruction = instructionFiles[target], template = `templates/${posix.basename(instruction)}`;
+      const targetFiles = [...setupFiles];
+      if (files.has(template)) targetFiles.push({ source: template, destination: instruction, mode: "managed-block" });
+      files.set(target === product ? "setup-manifest.json" : `setup-manifest.${target}.json`, json({ schemaVersion: 1, plugin: name, product: target, version, files: targetFiles }));
+    }
     checkLinks(files);
     for (const [path, body] of files) result.set(`${prefix}/${path}`, body);
     const marketplace = JSON.parse(await readFile(join(source, "marketplace.json"), "utf8"));

@@ -14,6 +14,7 @@ beforeEach(async () => {
     await put(`packaging/${product}/marketplace.json`, JSON.stringify({ name: "agent-gear", plugins: [] }));
     await put(`packaging/${product}/templates/${product === "codex" ? "AGENTS.md" : "CLAUDE.md"}`, "Use {{SKILL_ROOT}}\n");
   }
+  await put("packaging/copilot/templates/copilot-instructions.md", "Use {{SKILL_ROOT}} in Copilot\n");
   await put("skills/example/SKILL.md", "---\nname: example\ndescription: Example\n---\n\nSee [guide](references/guide.md).\n");
   await put("skills/example/references/guide.md", "# Guide\n");
   await put("skills/example/scripts/main.ts", "export {};\n");
@@ -42,6 +43,13 @@ test("builds both self-contained products and creates catalogs with the root ver
   expect(codex.plugins[0].source.path).toBe("./dist/codex/agent-gear");
   const claude = JSON.parse(await readFile(join(root, ".claude-plugin/marketplace.json"), "utf8"));
   expect(claude.plugins[0].source).toBe("./dist/claude-code/agent-gear");
+  const copilot = JSON.parse(await readFile(join(root, "dist/claude-code/agent-gear/setup-manifest.copilot.json"), "utf8"));
+  expect(copilot).toMatchObject({ schemaVersion: 1, plugin: "agent-gear", product: "copilot", version: "1.2.3" });
+  expect(copilot.files).toContainEqual({ source: "templates/copilot-instructions.md", destination: ".github/copilot-instructions.md", mode: "managed-block" });
+  expect(copilot.files).toContainEqual({ source: "space/babel/index.md", destination: ".space/babel/vendor/agent-gear/index.md", mode: "copy" });
+  expect(copilot.files.some((entry: { destination: string }) => entry.destination === "CLAUDE.md")).toBe(false);
+  expect(await Bun.file(join(root, "dist/claude-code/agent-gear/templates/copilot-instructions.md")).text()).toContain("in Copilot");
+  expect(await Bun.file(join(root, "dist/codex/agent-gear/setup-manifest.copilot.json")).exists()).toBe(false);
   expect(await checkBuild(root)).toEqual([]);
 });
 
@@ -66,6 +74,11 @@ test("rejects missing links and symlinked inputs before replacing an existing bu
   expect(await readFile(path, "utf8")).toBe(before);
   await put("skills/example/SKILL.md", "# Example\n");
   await symlink(join(root, "docs/private.md"), join(root, "skills/example/references/leak.md"));
+  await expect(build(root)).rejects.toThrow("Symlink");
+  expect(await readFile(path, "utf8")).toBe(before);
+  await rm(join(root, "skills/example/references/leak.md"));
+  await rm(join(root, "packaging/copilot/templates/copilot-instructions.md"));
+  await symlink(join(root, "docs/private.md"), join(root, "packaging/copilot/templates/copilot-instructions.md"));
   await expect(build(root)).rejects.toThrow("Symlink");
   expect(await readFile(path, "utf8")).toBe(before);
 });

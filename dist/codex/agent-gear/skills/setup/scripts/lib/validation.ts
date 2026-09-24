@@ -1,5 +1,5 @@
 import type { Entry, Manifest, State, Pending } from "./model.ts";
-import { SetupError } from "./model.ts";
+import { instructionFiles, isProduct, SetupError } from "./model.ts";
 import { relativePath } from "./files.ts";
 
 function object(value: unknown): Record<string, unknown> { if (!value || typeof value !== "object" || Array.isArray(value)) throw new SetupError("INVALID_DATA", "Expected object"); return value as Record<string, unknown>; }
@@ -10,12 +10,12 @@ export function allowedEntry(value: unknown, manifest: Pick<Manifest, "plugin" |
   const entry = object(value); exact(entry, installed ? ["source", "destination", "mode", "hash"] : ["source", "destination", "mode"]);
   const source = relativePath(entry.source), destination = relativePath(entry.destination);
   if (entry.mode !== "copy" && entry.mode !== "managed-block") throw new SetupError("INVALID_DATA", "Invalid entry mode");
-  const allowed = entry.mode === "managed-block" ? destination === (manifest.product === "codex" ? "AGENTS.md" : "CLAUDE.md") : destination.startsWith(`.space/babel/vendor/${manifest.plugin}/`) || manifest.product === "codex" && destination.startsWith(".codex/agents/");
+  const allowed = entry.mode === "managed-block" ? destination === instructionFiles[manifest.product] : destination.startsWith(`.space/babel/vendor/${manifest.plugin}/`) || manifest.product === "codex" && destination.startsWith(".codex/agents/");
   if (!allowed) throw new SetupError("DESTINATION", `Destination is outside allowed locations: ${destination}`);
   return { source, destination, mode: entry.mode };
 }
 function identity(value: Record<string, unknown>) {
-  if (value.schemaVersion !== 1 || typeof value.plugin !== "string" || !/^[a-z0-9][a-z0-9-]*$/.test(value.plugin) || !["codex", "claude-code"].includes(String(value.product))) throw new SetupError("INVALID_DATA", "Invalid schema, plugin, or product");
+  if (value.schemaVersion !== 1 || typeof value.plugin !== "string" || !/^[a-z0-9][a-z0-9-]*$/.test(value.plugin) || !isProduct(value.product)) throw new SetupError("INVALID_DATA", "Invalid schema, plugin, or product");
   text(value.version);
 }
 function noDuplicates(entries: Entry[]) {

@@ -1,8 +1,8 @@
 # agent-gearの現状
 
-agent-gearは、開発作業のフロー、タスク台帳、知識管理、プロジェクトへの導入をCodexとClaude Codeへ配布するプラグインである。目的と配置方針の正本は[architecture.md](architecture.md)、導入・生成方法は[distribution.md](distribution.md)に置く。
+agent-gearは、開発作業のフロー、タスク台帳、知識管理、プロジェクトへの導入をCodex・Claude Code・GitHub Copilot in VS Codeへ配布するプラグインである。CopilotはClaude形式の配布物を共用する。目的と配置方針の正本は[architecture.md](architecture.md)、導入・生成方法は[distribution.md](distribution.md)に置く。
 
-2026-09-23時点の作業ツリーを対象とする。以下はローカル実装の状態であり、mainへの公開やリモートCIの成功を意味しない。詳細な検証結果は[配布の実装記録](distribution-implementation.md)を参照する。
+2026-09-24時点の作業ツリーを対象とする。以下はローカル実装の状態であり、最新変更のmainへの公開やリモートCIの成功を意味しない。詳細な検証結果は[配布の実装記録](distribution-implementation.md)と[Copilot対応記録](copilot-support.md)を参照する。
 
 ## 提供するもの
 
@@ -16,7 +16,7 @@ agent-gearは、開発作業のフロー、タスク台帳、知識管理、プ�
 | use-principles / checkpoint-safely | 原則の選択・適用と、中断・引き継ぎの保存を担当する |
 | 共通知識 | [space/babel](../space/babel/index.md)の23原則。実体は利用先のvendor bundleへ配置する |
 
-計9スキルを両製品へ同梱する。リポジトリの`.agents/skills/`と`.codex/agents/`は開発環境用であり、製品のエージェント定義として配布しない。現在は製品専用エージェント定義やhooksを追加していない。
+計9スキルを二つの形式の配布物へ同梱し、三製品で利用する。リポジトリの`.agents/skills/`と`.codex/agents/`は開発環境用であり、製品のエージェント定義として配布しない。現在は製品専用エージェント定義やhooksを追加していない。
 
 ## 正本と実行場所
 
@@ -25,6 +25,7 @@ agent-gearは、開発作業のフロー、タスク台帳、知識管理、プ�
 | `skills/` | 配布するスキル・参照資料・CLIの正本。testsは開発用 |
 | `space/babel/` | 共通知識の配布用正本 |
 | `packaging/codex/`・`packaging/claude-code/` | 製品別manifest・指示テンプレート |
+| `packaging/copilot/` | 共用配布物へ組み込むCopilot用指示テンプレート |
 | `dist/` | buildで生成しGit管理する配布物。テスト・docs・node_modulesを含めない |
 | `.agents/plugins/marketplace.json`・`.claude-plugin/marketplace.json` | それぞれのdistを参照する生成済みカタログ |
 | `docs/` | 開発者向けの設計・検証記録。配布しない |
@@ -44,6 +45,7 @@ OKFのconceptはfrontmatter付きMarkdown一件、bundleはその集合を指す
 ## 動作と制約
 
 - setupは前回配置した内容を照合し、既存の独自文書や指示の管理ブロック外を保持する。衝突時には適用前に停止し、途中終了はpending記録から再開する。
+- Copilot用setupは`--product copilot`で同梱manifestを選択し、`.github/copilot-instructions.md`へ配置する。省略時のCodex・Claude Codeの既定動作は維持する。
 - orchはローカルJSONを排他・原子的置換で更新する。再送を操作IDで識別し、古い試行・置き換え済みの証拠・失効した提出を現在の合格として扱わない。
 - OKFは内容と根拠の正しさを判定しない。エージェントが記録の価値と本文を判断し、CLIが検索・形式検証・ファイル操作を行う。複数ファイル全体の自動巻き戻しはない。
 - 異常終了後のロックは自動で奪わない。各CLIの資料に従い、書き手の停止を確認して復旧する。

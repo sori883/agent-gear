@@ -180,6 +180,77 @@ async function cli(entry: string, args: string[], cwd: string) {
   return { code, out, err, data: JSON.parse(out) };
 }
 
+async function addCopilot(f: Awaited<ReturnType<typeof fixture>>) {
+  const manifest = { ...f.manifest, product: "copilot", files: f.manifest.files.map(e => ({ ...e, destination: e.destination === "AGENTS.md" ? ".github/copilot-instructions.md" : e.destination })) };
+  await writeFile(join(f.pluginRoot, "setup-manifest.copilot.json"), JSON.stringify(manifest));
+  return manifest;
+}
+
+test("Copilot CLI selection preserves existing instructions, isolates state, and converges on shared vendor updates", async () => {
+  const f = await fixture(), entry = await copyCLI(f), copilot = await addCopilot(f);
+  const path = join(f.project, ".github/copilot-instructions.md");
+  await mkdir(join(f.project, ".github")); await writeFile(path, "User Copilot instructions\n");
+  const args = ["--product", "copilot", "--project", f.project, "--json"];
+  const plan = await cli(entry, ["plan", ...args], f.root);
+  expect(plan.code).toBe(0); expect(plan.data.data.product).toBe("copilot");
+  expect(await Bun.file(f.copy).exists()).toBe(false);
+  expect((await cli(entry, ["apply", ...args], f.root)).code).toBe(0);
+  const first = await readFile(path, "utf8");
+  expect(first).toStartWith("User Copilot instructions\n");
+  expect(first).toContain("agent-gear:setup:agent-gear:copilot:start");
+  expect(first).toContain(join(f.pluginRoot, "skills"));
+  expect(await Bun.file(join(f.project, "AGENTS.md")).exists()).toBe(false);
+  expect(await Bun.file(join(f.project, "CLAUDE.md")).exists()).toBe(false);
+  expect((await cli(entry, ["apply", ...args], f.root)).code).toBe(0);
+  expect(await readFile(path, "utf8")).toBe(first);
+  await f.run("apply");
+  f.manifest.version = copilot.version = "2.0.0";
+  await writeFile(join(f.pluginRoot, "setup-manifest.json"), JSON.stringify(f.manifest));
+  await writeFile(join(f.pluginRoot, "setup-manifest.copilot.json"), JSON.stringify(copilot));
+  await writeFile(join(f.pluginRoot, "templates/rule.md"), "version two\n");
+  await writeFile(join(f.pluginRoot, "templates/instructions.md"), "Updated {{SKILL_ROOT}}\n");
+  await writeFile(path, first + "Outside block edit\n");
+  await f.run("apply");
+  expect((await cli(entry, ["apply", ...args], f.root)).code).toBe(0);
+  expect(await readFile(path, "utf8")).toStartWith("User Copilot instructions\n");
+  expect(await readFile(path, "utf8")).toEndWith("Outside block edit\n");
+  expect(await readFile(path, "utf8")).toContain("Updated ");
+  for (const product of ["codex", "copilot"]) expect(JSON.parse(await readFile(join(f.project, `.space/setup/agent-gear-${product}.json`), "utf8")).version).toBe("2.0.0");
+  expect((await cli(entry, ["status", ...args], f.root)).data.data.actions.every((a: { action: string }) => a.action === "unchanged")).toBe(true);
+  const edited = (await readFile(path, "utf8")).replace("Updated ", "Local instruction edit ");
+  await writeFile(path, edited);
+  expect((await cli(entry, ["apply", ...args], f.root)).code).toBe(3);
+  expect(await readFile(path, "utf8")).toBe(edited);
+});
+
+test("product selection rejects unknown, unavailable, and mismatched manifests before writes", async () => {
+  const f = await fixture(), entry = await copyCLI(f);
+  for (const [product, error] of [["../outside", "INPUT"], ["copilot", "MANIFEST"]]) {
+    const result = await cli(entry, ["apply", "--product", product!, "--project", f.project, "--json"], f.root);
+    expect(result.code).toBe(2); expect(result.data.error.code).toBe(error);
+  }
+  const manifest = await addCopilot(f);
+  for (const field of ["product", "plugin", "version"] as const) {
+    await writeFile(join(f.pluginRoot, "setup-manifest.copilot.json"), JSON.stringify({ ...manifest, [field]: field === "product" ? "claude-code" : "other" }));
+    const result = await cli(entry, ["apply", "--product", "copilot", "--project", f.project, "--json"], f.root);
+    expect(result.code).toBe(2);
+  }
+  expect(await Bun.file(f.copy).exists()).toBe(false);
+  expect(await Bun.file(join(f.project, ".space/setup/agent-gear-copilot.json")).exists()).toBe(false);
+  const explicit = await cli(entry, ["plan", "--product", "codex", "--project", f.project, "--json"], f.root);
+  expect(explicit.code).toBe(0); expect(explicit.data.data.product).toBe("codex");
+});
+
+test("Copilot manifests refuse other products' instructions and agents", async () => {
+  const f = await fixture(), manifest = await addCopilot(f);
+  for (const destination of ["CLAUDE.md", "AGENTS.md", ".codex/agents/helper.toml", ".github/other.md"]) {
+    manifest.files[1]!.destination = destination;
+    await writeFile(join(f.pluginRoot, "setup-manifest.copilot.json"), JSON.stringify(manifest));
+    await expect(runSetup({ command: "apply", project: f.project, pluginRoot: f.pluginRoot, product: "copilot" })).rejects.toThrow("outside allowed");
+  }
+  expect(await Bun.file(f.copy).exists()).toBe(false);
+});
+
 test("copied real CLI uses its own manifest/runtime and requires explicit project", async () => {
   const f = await fixture(), entry = await copyCLI(f);
   await writeFile(join(f.project, "package.json"), '{"name":"consumer"}\n');

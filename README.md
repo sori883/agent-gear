@@ -1,6 +1,6 @@
 # agent-gear
 
-**AIと開発を進めるための手順と、作業・知識の管理機能をまとめた、Codex・Claude Code向けプラグインです。**
+**AIと開発を進めるための手順と、作業・知識の管理機能をまとめた、Codex・Claude Code・GitHub Copilot in VS Code向けプラグインです。**
 
 「何を作るかを整理する」「実装して確かめる」「なぜその設計にしたかを残す」といった作業を支援します。途中で会話や担当が変わっても、記録を手がかりに続きを進められます。
 
@@ -29,7 +29,7 @@
 
 ### 1. プラグインをインストールする
 
-使う製品のCLIと、付属ツールを動かすための **Bun 1.4.2以上**を用意してください。以下のコマンドはターミナルで実行します。1行目は配布元の登録、2行目はプラグインのインストールです。
+使う製品と、付属ツールを動かすための **Bun 1.4.2以上**を用意してください。Codex・Claude Codeの以下のコマンドは、それぞれのCLIを用意してターミナルで実行します。1行目は配布元の登録、2行目はプラグインのインストールです。
 
 **Codexの場合**
 
@@ -45,6 +45,18 @@ claude plugin marketplace add sori883/agent-gear --scope user
 claude plugin install agent-gear@agent-gear --scope user
 ```
 
+**VS CodeのGitHub Copilotの場合（agent-gear 0.1.1以降）**
+
+Agent Pluginsに対応したVS Codeで、ユーザー設定（settings.json）の配布元一覧にこのリポジトリを追加します。既存の一覧がある場合は、その項目を残して追加してください。
+
+```json
+{
+  "chat.plugins.marketplaces": ["sori883/agent-gear"]
+}
+```
+
+拡張機能ビューで`@agentPlugins`を検索し、`agent-gear`をインストールします。Claude Codeと同じ配布物を利用できます。表示されない場合は`chat.plugins.enabled`を確認してください。[ローカル配布物からの導入と詳しい手順](docs/distribution.md#vs-codeのgithub-copilotへ導入する)も用意しています。
+
 インストール後は、作業したいプロジェクトで新しい会話を開きます。
 
 ### 2. プロジェクトを初期設定する
@@ -56,6 +68,8 @@ agent-gearのsetupを使って、今開いているこのプロジェクトに�
 ```
 
 setupは共通の開発原則や、AIがスキルを使うための指示を配置します。既存の指示を保持し、変更が衝突する場合は適用前に知らせます。初期設定は、agent-gearを使うプロジェクトごとに行います。
+
+Copilotでは「GitHub Copilot向けに、setupの`--product copilot`を使って初期設定してください」と伝えます。指示は`.github/copilot-instructions.md`に配置されます。更新・状態確認でも同じ製品指定を使います。
 
 ### 3. やりたいことを依頼する
 

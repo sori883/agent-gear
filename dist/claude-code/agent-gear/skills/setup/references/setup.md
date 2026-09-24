@@ -10,6 +10,16 @@ setup apply --project /absolute/path/to/project --json
 setup status --project /absolute/path/to/project --json
 ```
 
+GitHub Copilot in VS Codeでは、各コマンドに`--product copilot`を指定する。
+
+```text
+setup plan --project /absolute/path/to/project --product copilot --json
+setup apply --project /absolute/path/to/project --product copilot --json
+setup status --project /absolute/path/to/project --product copilot --json
+```
+
+`--product`は`codex`・`claude-code`・`copilot`を受け付ける。省略時は配布ルートのsetup-manifest.jsonに記載された製品を使う。CopilotとClaude Codeは配布物を共用し、既定はclaude-codeなので、Copilotでは省略しない。既定と異なる製品は、同梱されたsetup-manifest.<product>.jsonから読み取る。未同梱の製品や、プラグイン名・版数・製品が一致しないmanifestは拒否する。
+
 | コマンド | 動作 |
 | --- | --- |
 | `plan` | 同梱内容、前回の管理記録、現在のファイルを比較し、変更予定と衝突を返す |
@@ -28,6 +38,7 @@ planとstatusは対象プロジェクトへ書き込まない。初回起動で�
 | 同梱されたCodex用のエージェント定義 | `.codex/agents/` |
 | Codexの指示 | `AGENTS.md`内の管理ブロック |
 | Claude Codeの指示 | `CLAUDE.md`内の管理ブロック |
+| GitHub Copilotの指示 | `.github/copilot-instructions.md`内の管理ブロック |
 | 前回配置した内容のハッシュ | `.space/setup/<plugin>-<product>.json` |
 
 Claude Codeのエージェントはプラグインのagentsとして提供される。setupではCodexのagents配置先へコピーしない。
@@ -66,4 +77,4 @@ applyは`.space/setup/<plugin>.lock`で同じプラグインの書き手を排�
 
 同じホストのローカルファイルを対象にする。ネットワーク共有、電源断、別プロセスが同じファイルを同時に編集する状況での完全な一括適用は保証しない。適用中にプラグインのファイルを入れ替えない。
 
-同じプロジェクトへCodex・Claude Code両方を導入した場合、vendorは共有し、管理記録は製品ごとに持つ。一方でvendorを更新し、他方も同じ内容の新版へ更新する場合、既に配置された内容と完全に一致することを確認して管理記録を更新する。異なるローカル編集は上書きせず停止する。製品ごとに別の版を維持する場合も、両方の配置記録と内容の差を確認する。
+同じプロジェクトへCodex・Claude Code・Copilotの複数製品を導入した場合、vendorは共有し、管理記録は製品ごとに持つ。一方でvendorを更新し、他方も同じ内容の新版へ更新する場合、既に配置された内容と完全に一致することを確認して管理記録を更新する。異なるローカル編集は上書きせず停止する。製品ごとに別の版を維持する場合も、各製品の配置記録と内容の差を確認する。

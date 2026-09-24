@@ -12,24 +12,32 @@ async function run(cli: string, args: string[], cwd: string) {
   return { code, out, err };
 }
 
-for (const product of ["codex", "claude-code"]) test(`${product} installs outside the repository, preserves user content, and runs all three CLIs`, async () => {
+for (const product of ["codex", "claude-code", "copilot"]) test(`${product} installs outside the repository, preserves user content, and runs all three CLIs`, async () => {
   const root = await realpath(await mkdtemp(join(tmpdir(), "gear-install-"))); temporary.push(root);
   const plugin = join(root, "plugin"), project = join(root, "consumer"); await mkdir(project);
-  const prefix = `dist/${product}/agent-gear/`;
+  const prefix = `dist/${product === "copilot" ? "claude-code" : product}/agent-gear/`;
   for (const [path, body] of await distribution(resolve(import.meta.dir, "../.."))) {
     if (!path.startsWith(prefix)) continue;
     const target = join(plugin, path.slice(prefix.length)); await mkdir(dirname(target), { recursive: true }); await writeFile(target, body);
   }
-  const instruction = product === "codex" ? "AGENTS.md" : "CLAUDE.md";
+  const instruction = product === "codex" ? "AGENTS.md" : product === "copilot" ? ".github/copilot-instructions.md" : "CLAUDE.md";
+  await mkdir(dirname(join(project, instruction)), { recursive: true });
   await writeFile(join(project, instruction), "# Existing project\n\nKeep these user instructions.\n");
   await writeFile(join(project, "package.json"), '{"name":"consumer","private":true}\n');
   const setup = join(plugin, "skills/setup/scripts/setup.ts");
-  const plan = await run(setup, ["plan", "--project", project, "--json"], project);
+  const setupArgs = ["--project", project, "--json", ...(product === "copilot" ? ["--product", "copilot"] : [])];
+  const plan = await run(setup, ["plan", ...setupArgs], project);
   expect(plan.code).toBe(0); expect(await Bun.file(join(project, ".space/babel/vendor/agent-gear/index.md")).exists()).toBe(false);
-  const apply = await run(setup, ["apply", "--project", project, "--json"], project); expect(apply.code).toBe(0);
+  const apply = await run(setup, ["apply", ...setupArgs], project); expect(apply.code).toBe(0);
+  expect(JSON.parse(apply.out).data.product).toBe(product);
+  if (product === "copilot") {
+    expect(await Bun.file(join(project, "CLAUDE.md")).exists()).toBe(false);
+    expect(await Bun.file(join(project, "AGENTS.md")).exists()).toBe(false);
+    expect(await Bun.file(join(project, ".space/setup/agent-gear-copilot.json")).exists()).toBe(true);
+  }
   const instructions = await readFile(join(project, instruction), "utf8");
   expect(instructions).toContain("Keep these user instructions."); expect(instructions).toContain(join(plugin, "skills")); expect(instructions).not.toContain("{{");
-  expect((await run(setup, ["apply", "--project", project, "--json"], project)).code).toBe(0);
+  expect((await run(setup, ["apply", ...setupArgs], project)).code).toBe(0);
   expect(await readFile(join(project, instruction), "utf8")).toBe(instructions);
   const okf = join(plugin, "skills/okf-agent-memory/scripts/okf.ts"), vendor = join(project, ".space/babel/vendor/agent-gear");
   const principles = await run(okf, ["search", "--type", "principle", "--all", vendor, "--json"], project);
@@ -52,7 +60,7 @@ for (const product of ["codex", "claude-code"]) test(`${product} installs outsid
   expect(await readFile(join(project, "package.json"), "utf8")).toBe('{"name":"consumer","private":true}\n');
   expect(await Bun.file(join(project, "bun.lock")).exists()).toBe(false);
   const edited = join(vendor, "principles/minimize-reader-load.md"); const modified = (await readFile(edited, "utf8")) + "\nLocal addition.\n"; await writeFile(edited, modified);
-  expect((await run(setup, ["apply", "--project", project, "--json"], project)).code).not.toBe(0);
+  expect((await run(setup, ["apply", ...setupArgs], project)).code).not.toBe(0);
   expect(await readFile(edited, "utf8")).toBe(modified);
   expect(await readFile(join(project, instruction), "utf8")).toBe(instructions);
 }, 20000);

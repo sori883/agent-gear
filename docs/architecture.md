@@ -1,8 +1,8 @@
 # agent-gearの目的と配布設計
 
-agent-gearは、AIエージェントが開発で使うスキル・CLI・共通知識・ルールを、CodexとClaude Code向けに配布するためのリポジトリである。利用先のプロジェクトで、知識管理、タスク分割・管理、必要な文書や設定の導入を行える道具を作る。
+agent-gearは、AIエージェントが開発で使うスキル・CLI・共通知識・ルールを、Codex・Claude Code・GitHub Copilot in VS Code向けに配布するためのリポジトリである。利用先のプロジェクトで、知識管理、タスク分割・管理、必要な文書や設定の導入を行える道具を作る。
 
-**スキルごとにCLIと実行時の依存関係を持たせ、Codex・Claude Code向けの配布物を `main` ブランチで管理する。CLIは配布後もTypeScriptとし、Bunで実行する。**
+**スキルごとにCLIと実行時の依存関係を持たせ、配布物を `main` ブランチで管理する。Codex形式とClaude形式を生成し、Claude Code・CopilotはClaude形式を共用する。CLIは配布後もTypeScriptとし、Bunで実行する。**
 
 この文書を、何を作るか・どこに置くか・どう配布するかを判断するための設計方針の正本とする。以下は目標の構成であり、すべてが実装済みという意味ではない。実装状況や検証結果は [現状資料](current-state.md) や個別の開発資料に記録し、この設計と区別する。
 
@@ -25,6 +25,7 @@ agent-gearは、AIエージェントが開発で使うスキル・CLI・共通�
 | `skills/` | 配布するスキルと専用CLIの正本。スキル専用の説明・実行手順は `references/`、実行コードと依存定義は `scripts/`、開発用テストは `tests/` に置く |
 | `space/babel/` | 配布する共通知識・ルールの正本。複数のスキルやエージェントから参照する文書を置く |
 | `packaging/codex/`・`packaging/claude-code/` | 製品別のマニフェスト、エージェント定義、必要なhooksや指示テンプレートの正本 |
+| `packaging/copilot/` | Copilot用の指示テンプレートの正本。Claude形式の配布物に組み込む |
 | `scripts/build.ts` | 共通ソースと製品別定義から、配布物とカタログを生成する開発用の入口 |
 | `dist/<製品>/<plugin-name>/` | 自動生成した配布物。Gitで管理し、手編集しない |
 | ルートの `package.json`・`bun.lock` | 配布物の生成、リポジトリ全体の検証に使う開発依存と、配布物のリリース版数を管理する |
@@ -124,12 +125,14 @@ setupは、プラグイン自身の位置から同梱ファイルを読み、利
 | 共通知識・ルール | `.space/babel/vendor/<plugin-name>/` に配置し、目次・5種類のディレクトリ・文書間リンクを保持する |
 | Codex向けエージェント定義 | 配布物の `templates/agents/` に同梱し、必要に応じて `.codex/agents/` へ配置する |
 | Claude Code向けエージェント定義 | 配布物の `agents/` に同梱し、プラグインのエージェントとして提供する |
-| `AGENTS.md`・`CLAUDE.md` のテンプレート | 既存の指示を確認して統合する。配布用テンプレートと開発リポジトリの指示を混同しない |
+| `AGENTS.md`・`CLAUDE.md`・`copilot-instructions.md` のテンプレート | Codexは`AGENTS.md`、Claude Codeは`CLAUDE.md`、Copilotは`.github/copilot-instructions.md`へ既存の指示を確認して統合する。配布用テンプレートと開発リポジトリの指示を混同しない |
 | hooks | 使用する場合にだけ、配布先製品の形式で組み込む |
 
 更新対象は、そのプラグインが管理するファイルに限る。利用先固有の知識、他の配布元の文書、checkpoint、既存の指示やエージェント設定を上書きしない。配置済みの共通文書にローカル編集がある場合は、差分を示して自動上書きを避ける。
 
 ファイルを置くだけでAIへの注入が完了したとは扱わない。必要な文書の検索・選択・読み込みや、指示ファイルへの反映は、各スキルとCLIの利用手順として定義する。
+
+CopilotとClaude Codeはスキル・CLI・共通知識の配布物を共用し、setupの配置先だけを製品ごとに選択する。既定は従来の`setup-manifest.json`とし、Copilotは`--product copilot`で同梱の`setup-manifest.copilot.json`を明示的に選ぶ。未同梱の製品を他製品へ読み替えない。管理記録は製品ごと、vendorと書き手のロックはプラグインごとに共有する。現在の共通スキルに製品専用のagents・hooksは含まれない。今後追加する場合は、形式が読み込めることと実行互換性を分けて検証する。
 
 ## TypeScriptのまま生成し、mainから配布する
 
@@ -141,6 +144,9 @@ setupは、プラグイン自身の位置から同梱ファイルを読み、利
 | --- | --- | --- |
 | Codex | `.agents/plugins/marketplace.json` | `./dist/codex/<plugin-name>` |
 | Claude Code | `.claude-plugin/marketplace.json` | `./dist/claude-code/<plugin-name>` |
+| GitHub Copilot in VS Code | `.claude-plugin/marketplace.json`を共用 | `./dist/claude-code/<plugin-name>`を共用 |
+
+Copilot対応は2026-09-24のユーザー依頼で追加した。VS CodeがClaude形式を扱えるため、共通ソースと既存カタログを再利用し、第三の配布物は作らない。Copilot固有の指示とsetupの選択を追加する。[設計と確認記録](copilot-support.md)に根拠と実装・検証範囲を記録する。
 
 カタログと配布物の版数はルートの版数からそろえて生成する。ソース・`dist/`・カタログを同じリポジトリの `main` で管理し、ソース変更と生成結果を同じPRに含める。利用者はリポジトリをマーケットプレイスとして登録し、クライアントのインストール・更新機能から配布物を取得する。別のリリースブランチへ生成物を送る構成にはしない。
 

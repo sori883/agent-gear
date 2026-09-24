@@ -1,18 +1,19 @@
 import { parseArgs } from "node:util";
 import { resolve } from "node:path";
 import { runSetup } from "./lib/setup.ts";
-import { SetupError } from "./lib/model.ts";
+import { isProduct, SetupError } from "./lib/model.ts";
 
 export async function main(args = process.argv.slice(2)): Promise<number> {
   let compact = args.includes("--json");
   try {
-    const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { project: { type: "string" }, json: { type: "boolean" }, help: { type: "boolean", short: "h" } } });
+    const { values, positionals } = parseArgs({ args, allowPositionals: true, strict: true, options: { project: { type: "string" }, product: { type: "string" }, json: { type: "boolean" }, help: { type: "boolean", short: "h" } } });
     compact = values.json ?? false;
-    if (values.help) { console.log("Usage: bun <setup-skill>/scripts/setup.ts <plan|apply|status> --project <directory> [--json]\nplan/status are read-only for the project. apply writes only declared files and managed instruction blocks.\nThe plugin root is determined from this script's location; setup-manifest.json must be present there."); return 0; }
+    if (values.help) { console.log("Usage: bun <setup-skill>/scripts/setup.ts <plan|apply|status> --project <directory> [--product <codex|claude-code|copilot>] [--json]\nplan/status are read-only for the project. apply writes only declared files and managed instruction blocks.\nThe plugin root is determined from this script's location; setup-manifest.json must be present there.\nThe product defaults to that manifest. In VS Code with GitHub Copilot, pass --product copilot on every command; the plugin must include setup-manifest.copilot.json."); return 0; }
     const command = positionals[0];
     if (positionals.length !== 1 || !["plan", "apply", "status"].includes(command ?? "")) throw new SetupError("INPUT", "Specify exactly one command: plan, apply, or status");
     if (!values.project?.trim()) throw new SetupError("INPUT", "--project is required");
-    const data = await runSetup({ command: command as "plan" | "apply" | "status", project: resolve(values.project), pluginRoot: resolve(import.meta.dir, "../../..") });
+    if (values.product !== undefined && !isProduct(values.product)) throw new SetupError("INPUT", "--product must be codex, claude-code, or copilot");
+    const data = await runSetup({ command: command as "plan" | "apply" | "status", project: resolve(values.project), pluginRoot: resolve(import.meta.dir, "../../.."), product: values.product });
     console.log(JSON.stringify({ ok: true, data }, null, compact ? undefined : 2)); return 0;
   } catch (error) {
     const code = error instanceof SetupError ? error.code : (error as NodeJS.ErrnoException).code?.startsWith("ERR_PARSE_ARGS") ? "INPUT" : error instanceof SyntaxError ? "INVALID_DATA" : "IO";

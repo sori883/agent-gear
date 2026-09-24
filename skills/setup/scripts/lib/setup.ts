@@ -1,8 +1,8 @@
 import { lstat, open, realpath, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { Manifest, State, Pending, Result, Entry, Operation } from "./model.ts";
-import { SetupError } from "./model.ts";
+import type { Manifest, State, Pending, Result, Entry, Operation, Product } from "./model.ts";
+import { isProduct, SetupError } from "./model.ts";
 import { atomicWrite, hash, jsonBytes, readOptional, safeMkdir, safePath } from "./files.ts";
 import { parseManifest, parsePending, parseState } from "./validation.ts";
 
@@ -21,11 +21,19 @@ function managedHash(content: Buffer | null, entry: Entry, manifest: Manifest): 
   if (entry.mode === "copy") return digest(content);
   const value = block(content, manifest).value; return value === null ? null : hash(value);
 }
-async function context(project: string, pluginRoot: string): Promise<Context> {
+async function context(project: string, pluginRoot: string, product?: Product): Promise<Context> {
+  if (product !== undefined && !isProduct(product)) throw new SetupError("INPUT", "Unknown product");
   project = await realpath(project); pluginRoot = await realpath(pluginRoot);
   if (!(await lstat(project)).isDirectory() || !(await lstat(pluginRoot)).isDirectory()) throw new SetupError("INVALID_DIRECTORY", "Project and plugin root must be directories");
-  const raw = await readOptional(pluginRoot, "setup-manifest.json"); if (!raw) throw new SetupError("MANIFEST", "setup-manifest.json is missing from the plugin root");
-  const manifest = parseManifest(JSON.parse(raw.toString()));
+  let raw = await readOptional(pluginRoot, "setup-manifest.json"); if (!raw) throw new SetupError("MANIFEST", "setup-manifest.json is missing from the plugin root");
+  let manifest = parseManifest(JSON.parse(raw.toString()));
+  if (product !== undefined && product !== manifest.product) {
+    const selected = await readOptional(pluginRoot, `setup-manifest.${product}.json`);
+    if (!selected) throw new SetupError("MANIFEST", `This plugin does not include setup for ${product}`);
+    const alternate = parseManifest(JSON.parse(selected.toString()));
+    if (alternate.product !== product || alternate.plugin !== manifest.plugin || alternate.version !== manifest.version) throw new SetupError("MANIFEST", "Selected setup manifest does not match the requested product, plugin, and version");
+    raw = selected; manifest = alternate;
+  }
   const base = `.space/setup/${manifest.plugin}-${manifest.product}`;
   return { project, pluginRoot, manifest, manifestHash: hash(raw), statePath: `${base}.json`, pendingPath: `${base}.pending.json`, lockPath: `.space/setup/${manifest.plugin}.lock` };
 }
@@ -72,8 +80,8 @@ async function plan(ctx: Context): Promise<{ result: Result; pending: Pending; s
   for (const old of state.entries.filter(e => !m.files.some(n => n.destination === e.destination))) { nextState.entries.push(old); result.actions.push({ destination: old.destination, mode: old.mode, action: "retain", reason: "Removed from the plugin; existing destination is preserved" }); }
   return { result, pending: { schemaVersion: 1, manifestHash: ctx.manifestHash, beforeStateHash: digest(stateBytes), nextState, operations }, stateBytes };
 }
-export async function runSetup(options: { command: "plan" | "apply" | "status"; project: string; pluginRoot: string }): Promise<Result> {
-  const ctx = await context(options.project, options.pluginRoot);
+export async function runSetup(options: { command: "plan" | "apply" | "status"; project: string; pluginRoot: string; product?: Product }): Promise<Result> {
+  const ctx = await context(options.project, options.pluginRoot, options.product);
   if (options.command !== "apply") return (await plan(ctx)).result;
   // Complete validation before creating metadata or acquiring the write lock.
   const preliminary = await plan(ctx); if (preliminary.result.conflicts.length) throw new SetupError("CONFLICT", "Setup conflict; no destination files were written", preliminary.result);
