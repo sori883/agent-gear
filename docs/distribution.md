@@ -40,7 +40,7 @@ Copilot対応版をmainへ反映した後、Gitリポジトリから導入する
 }
 ```
 
-拡張機能ビューで`@agentPlugins`を検索し、`agent-gear`をインストールする。共用カタログはリポジトリ直下、プラグイン本体はdist配下にあるため、リポジトリ全体を単一プラグインとして指定せずmarketplaceから選択する。`Chat: Open Customizations`でプラグインと9スキルを確認し、新しいCopilotの会話で利用する。
+拡張機能ビューで`@agentPlugins`を検索し、`agent-gear`をインストールする。共用カタログはリポジトリ直下、プラグイン本体はdist配下にあるため、リポジトリ全体を単一プラグインとして指定せずmarketplaceから選択する。`Chat: Open Customizations`でプラグインと[同梱スキル](current-state.md#提供するもの)を確認し、新しいCopilotの会話で利用する。
 
 Copilotでsetupを実行するときは、インストール先のスキルを基準に、毎回`--product copilot`を指定する。
 

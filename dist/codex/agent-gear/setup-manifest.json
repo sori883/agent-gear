@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "plugin": "agent-gear",
   "product": "codex",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "files": [
     {
       "source": "space/babel/LICENSE",
@@ -158,6 +158,16 @@
       "source": "space/babel/rules/index.md",
       "destination": ".space/babel/rules/index.md",
       "mode": "merge-index"
+    },
+    {
+      "source": "templates/agents/comment-curator.toml",
+      "destination": ".codex/agents/comment-curator.toml",
+      "mode": "copy"
+    },
+    {
+      "source": "templates/agents/devlow-worker.toml",
+      "destination": ".codex/agents/devlow-worker.toml",
+      "mode": "copy"
     },
     {
       "source": "templates/AGENTS.md",

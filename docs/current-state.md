@@ -2,7 +2,7 @@
 
 agent-gearは、開発作業のフロー、タスク台帳、知識管理、プロジェクトへの導入をCodex・Claude Code・GitHub Copilot in VS Codeへ配布するプラグインである。CopilotはClaude形式の配布物を共用する。目的と配置方針の正本は[architecture.md](architecture.md)、導入・生成方法は[distribution.md](distribution.md)に置く。
 
-2026-09-24時点の作業ツリーを対象とする。以下はローカル実装の状態であり、最新変更のmainへの公開やリモートCIの成功を意味しない。詳細な検証結果は[配布の実装記録](distribution-implementation.md)、[Copilot対応記録](copilot-support.md)、[Babel統合の記録](babel-distribution.md)を参照する。
+2026-09-26時点の作業ツリーを対象とする。以下はローカル実装の状態であり、最新変更のmainへの公開やリモートCIの成功を意味しない。詳細な検証結果は[配布の実装記録](distribution-implementation.md)、[Copilot対応記録](copilot-support.md)、[Babel統合の記録](babel-distribution.md)、[pstackスキルの採用記録](skills/pstack-adoption.md)を参照する。
 
 ## 提供するもの
 
@@ -14,9 +14,15 @@ agent-gearは、開発作業のフロー、タスク台帳、知識管理、プ�
 | setup | [スキル](../skills/setup/SKILL.md)と専用CLI。同梱文書と指示を既存のプロジェクトへ導入・更新する |
 | system-blueprint / how / why | システムの構成文書、動作の調査、設計理由の調査を担当する |
 | use-principles / checkpoint-safely | 原則の選択・適用と、中断・引き継ぎの保存を担当する |
+| blast-radius / interrogate | 影響経路と安全性の前提を確認し、独立レビューの指摘を照合する |
+| create-verification-skill / maintain-verification-skill / tdd | 利用先のアプリ専用検証スキルを作成・更新し、局所テストで不具合を再現して修正する |
+| teach / recall | 仕組みと理由を説明し、既存記録と実状態から現在地を再構成する |
+| show-me-your-work / no-comments | 判断の追記・訂正・照合と、コメントの知識をcode_refs付きOKFへ保存してから削除する手順 |
+| technical-writing / unslop / bro | 技術文書の構成、意味を保つ推敲、直前の回答の言い換え |
+| reflect / automate-me | 作業の学び・本人の作業方針からスキル案を作り、人間の承認後に反映する |
 | 共通知識 | [space/babel](../space/babel/index.md)の23原則。実体は利用先の`.space/babel/`へ配置する |
 
-計9スキルを二つの形式の配布物へ同梱し、三製品で利用する。リポジトリの`.agents/skills/`と`.codex/agents/`は開発環境用であり、製品のエージェント定義として配布しない。現在は製品専用エージェント定義やhooksを追加していない。
+計23スキルと2役のエージェントを二つの形式の配布物へ同梱し、三製品で利用する。`devlow-worker`はdevlowで担当単位を実行し、`comment-curator`はコメントを整理する。Codexではsetupが `.codex/agents/`へTOMLを配置し、Claude形式ではプラグインの `agents/`に同梱する。各クライアントでの起動・実行は未確認。リポジトリの`.agents/skills/`と`.codex/agents/`は開発環境用であり、製品のエージェント定義として配布しない。hooksは追加していない。
 
 ## 正本と実行場所
 
@@ -24,7 +30,7 @@ agent-gearは、開発作業のフロー、タスク台帳、知識管理、プ�
 | --- | --- |
 | `skills/` | 配布するスキル・参照資料・CLIの正本。testsは開発用 |
 | `space/babel/` | 共通知識の配布用正本 |
-| `packaging/codex/`・`packaging/claude-code/` | 製品別manifest・指示テンプレート |
+| `packaging/codex/`・`packaging/claude-code/` | 製品別manifest・指示テンプレート・エージェント定義 |
 | `packaging/copilot/` | 共用配布物へ組み込むCopilot用指示テンプレート |
 | `dist/` | buildで生成しGit管理する配布物。テスト・docs・node_modulesを含めない |
 | `.agents/plugins/marketplace.json`・`.claude-plugin/marketplace.json` | それぞれのdistを参照する生成済みカタログ |
@@ -41,6 +47,8 @@ agent-gearは、開発作業のフロー、タスク台帳、知識管理、プ�
 作業中の依頼、計画、仮説、試行結果は`.space/tasks/`へ保存する。OKFの`.space/babel/`には、システムの構成、採用した設計と理由、重要な変遷を残す。原則として引き渡し工程が保存要否と重複を確認し、保存と検証を行う。配布元の共通知識も同じ`.space/babel/`から検索する。setupが配置した文書の更新はハッシュで管理し、プロジェクト固有の文書や編集を上書きしない。
 
 OKFのconceptはfrontmatter付きMarkdown一件、bundleはその集合を指す。typeはrule・principle・knowledge・procedure・decision。index.mdは目次、log.mdは文書操作の履歴であり、システムの歴史や作業ログの代わりにはならない。
+
+コメント由来の理由・制約はno-commentsが削除前に保存・内容照合する。パス・globを `code_refs`に置き、シンボル・範囲・版は本文へ記す。調査と変更の入口から関連知識を検索できるよう、how・whyと導入時の指示にも接続した。show-me-your-workの訂正は元の行を残す追記であり、orchの状態更新やOKFの履歴を置き換えない。
 
 ## 動作と制約
 

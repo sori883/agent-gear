@@ -43,11 +43,29 @@ for (const product of ["codex", "claude-code", "copilot"]) test(`${product} inst
   const instructions = await readFile(join(project, instruction), "utf8");
   expect(instructions).toContain("Keep these user instructions."); expect(instructions).toContain(join(plugin, "skills")); expect(instructions).not.toContain("{{");
   expect(instructions).toContain(bundle); expect(instructions).not.toContain("vendor");
+  const installedAgents = new Map<string, string>();
+  for (const name of ["devlow-worker", "comment-curator"]) {
+    const path = product === "codex" ? join(project, ".codex/agents", `${name}.toml`) : join(plugin, "agents", `${name}.md`);
+    const content = await readFile(path, "utf8"); installedAgents.set(path, content);
+    if (product === "codex") {
+      const definition = Bun.TOML.parse(content) as Record<string, unknown>;
+      expect(definition.name).toBe(name);
+      expect(typeof definition.developer_instructions).toBe("string");
+      expect(content).toBe(await readFile(join(plugin, "templates/agents", `${name}.toml`), "utf8"));
+    } else {
+      const frontmatter = /^---\n([\s\S]+?)\n---\n/.exec(content);
+      expect(frontmatter).not.toBeNull();
+      const definition = Bun.YAML.parse(frontmatter![1]!) as Record<string, unknown>;
+      expect(definition.name).toBe(name); expect(typeof definition.description).toBe("string");
+      expect(await Bun.file(join(project, ".codex/agents", `${name}.toml`)).exists()).toBe(false);
+    }
+  }
   expect(await readFile(join(bundle, "knowledge/existing.md"))).toEqual(existingKnowledge);
   expect(await readFile(join(bundle, "log.md"))).toEqual(existingHistory);
   expect(await readFile(join(bundle, "knowledge/index.md"), "utf8")).toContain("existing.md");
   expect((await run(setup, ["apply", ...setupArgs], project)).code).toBe(0);
   expect(await readFile(join(project, instruction), "utf8")).toBe(instructions);
+  for (const [path, content] of installedAgents) expect(await readFile(path, "utf8")).toBe(content);
   const principles = await run(okf, ["search", "--type", "principle", "--all", "--json"], project);
   expect(principles.code).toBe(0); expect(JSON.parse(principles.out)).toHaveLength(23);
   const validation = await run(okf, ["validate", bundle, "--drift", "--json"], project);
@@ -67,11 +85,36 @@ for (const product of ["codex", "claude-code", "copilot"]) test(`${product} inst
   expect((await run(setup, ["apply", ...setupArgs], project)).code).toBe(0);
   expect(await readFile(join(bundle, "log.md"), "utf8")).toBe(log);
   expect(await readFile(join(bundle, "knowledge/index.md"), "utf8")).toContain("consumer.md");
+  const source = join(project, "src/retry.ts");
+  await mkdir(dirname(source), { recursive: true });
+  await writeFile(source, "// Retry once because the peer may close an idle connection.\nexport const retries = 1;\n");
+  const metadata = join(project, "rationale.json"), bodyFile = join(project, "rationale.md");
+  const rationale = "# Retry constraint\nThe peer can close an idle connection. Retry once.\nSource: src/retry.ts, retries, before comment removal.\n";
+  await writeFile(metadata, JSON.stringify({ type: "knowledge", title: "Retry constraint", description: "Why retries is one.", code_refs: ["src/retry.ts"], sources: [{ resource: "src/retry.ts" }] }));
+  await writeFile(bodyFile, rationale);
+  const save = await run(okf, ["create", "knowledge/retry", "--metadata-file", metadata, "--body-file", bodyFile, "--json"], project);
+  expect(save.code).toBe(0);
+  const saved = await run(okf, ["show", "knowledge/retry", "--json"], project);
+  expect(saved.code).toBe(0); expect(JSON.parse(saved.out).body).toBe(rationale);
+  expect((await run(okf, ["validate", bundle, "--drift", "--json"], project)).code).toBe(0);
+  await writeFile(source, "export const retries = 1;\n");
+  const byPath = await run(okf, ["search", "--for-path", "src/retry.ts", "--all", "--json"], project);
+  expect(byPath.code).toBe(0);
+  expect(JSON.parse(byPath.out)).toContainEqual(expect.objectContaining({ concept_id: "knowledge/retry", matched_on: expect.arrayContaining(["code_refs"]) }));
+  expect((await run(okf, ["validate", bundle, "--drift", "--json"], project)).code).toBe(0);
   const orch = join(plugin, "skills/orch/scripts/task.ts"), store = join(project, ".space/tasks/.orch");
   expect((await run(orch, ["init", "--store", store, "--project", project, "--actor", "parent", "--session", "one", "--operation-id", "init", "--json"], project)).code).toBe(0);
   const status = await run(orch, ["status", "--store", store, "--json"], project); expect(status.code).toBe(0); expect(JSON.parse(status.out).data.units).toEqual([]);
   expect(await readFile(join(project, "package.json"), "utf8")).toBe('{"name":"consumer","private":true}\n');
   expect(await Bun.file(join(project, "bun.lock")).exists()).toBe(false);
+  if (product === "codex") {
+    const agent = join(project, ".codex/agents/devlow-worker.toml");
+    const original = installedAgents.get(agent)!;
+    await writeFile(agent, original + '\nmodel = "local-choice"\n');
+    expect((await run(setup, ["apply", ...setupArgs], project)).code).not.toBe(0);
+    expect(await readFile(agent, "utf8")).toBe(original + '\nmodel = "local-choice"\n');
+    await writeFile(agent, original);
+  }
   const edited = join(bundle, "principles/minimize-reader-load.md"); const modified = (await readFile(edited, "utf8")) + "\nLocal addition.\n"; await writeFile(edited, modified);
   expect((await run(setup, ["apply", ...setupArgs], project)).code).not.toBe(0);
   expect(await readFile(edited, "utf8")).toBe(modified);

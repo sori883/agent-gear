@@ -117,8 +117,21 @@ flowchart TD
 | 現在の構成を文書化する | [system-blueprint](../../system-blueprint/SKILL.md)へ対象、確認済みの構成と根拠、既存文書を渡す |
 | 知識を検索・保存する | [okf-agent-memory](../../okf-agent-memory/SKILL.md)へ対象bundleと問い、または整理した最終結果・判断・根拠を渡す |
 | 再開用の記録を保存する | [checkpoint-safely](../../checkpoint-safely/SKILL.md)へ目的、現在状態、成果物・台帳への参照、次の操作、保存後に継続するかを渡す |
+| 作業の文脈を取り戻す | [recall](../../recall/SKILL.md)へ対象と既存記録、必要な期間を渡す。現在状態と残件を照合し、再開地点を選ぶ |
+| 変更の影響と安全性の前提を確かめる | [blast-radius](../../blast-radius/SKILL.md)へ差分・版・気になる境界を渡す。実行権限と必要な証拠を明示する |
+| 仕組みと理由を分かるように説明する | [teach](../../teach/SKILL.md)へ問いと読者、確認済みのhow・whyの結果を渡す |
+| 局所テストで不具合を直す | [tdd](../../tdd/SKILL.md)へ再現条件・期待する挙動・狭いテスト経路を渡す |
+| アプリの検証手順を再利用できる形にする | [create-verification-skill](../../create-verification-skill/SKILL.md)へ対象アプリ・利用環境・検証条件を渡す。既存手順の更新は [maintain-verification-skill](../../maintain-verification-skill/SKILL.md)へ渡す |
+| 複数の独立した観点で差分をレビューする | [interrogate](../../interrogate/SKILL.md)へ対象の版・差分・意図・確認基準・既存の証拠を渡す |
+| 判断の追記・訂正・照合を行う | [show-me-your-work](../../show-me-your-work/SKILL.md)へ記録先と範囲、判断の主体・時点・根拠を渡す |
+| コメントの知識をコード外へ移す | [no-comments](../../no-comments/SKILL.md)へ対象と整理範囲を渡す。必要な知識をOKFへ保存・照合してから削除する |
+| 文書を書く・整える | [technical-writing](../../technical-writing/SKILL.md)へ読者・目的・根拠を渡す。文章のみの推敲は [unslop](../../unslop/SKILL.md)、直前の説明の言い換えは [bro](../../bro/SKILL.md)を使う |
+| 作業の学びをスキルへ反映する | [reflect](../../reflect/SKILL.md)へ対象の作業・証拠・使用したスキルを渡す。具体的な改善案を提示し、人間が承認した範囲だけ反映する |
+| 本人の作業方針をスキルにする | [automate-me](../../automate-me/SKILL.md)へ本人の要望・対象範囲の記録・既存スキルを渡す。保存先と草案を示し、人間の承認後に作成・更新する |
 
 専門スキルの手順は接続先で読む。狭い問いが対象コードや既存の根拠の確認だけで解決する場合は、その場で調べ、how・whyを毎回起動しない。確認済みの知識と検索範囲は引き継ぎ、同じ調査を繰り返さない。調査結果の事実・推論・未確認の区別を保つ。
+
+独立した単位を同梱の `devlow-worker` または `comment-curator`へ渡す場合は、[担当の受け渡し](delegation.md)に従う。実際のスキルパス、所有範囲、既存の承認と証拠を渡し、不要な再調査や重複編集を避ける。
 
 必要なスキル・道具が利用できなければ、利用可能な方法で進められる範囲と不足を明示する。未取得の根拠や未実施の専門作業を実施済みにしない。OKFとcheckpointの保存処理は、それぞれのスキルに任せる。
 
@@ -137,7 +150,7 @@ task.mdは標準（中規模）・大規模のタスクで作成する。会話�
 | 内容 | 分割する場合の名前 |
 | --- | --- |
 | 依頼、調査、設計、計画 | `request.md`、`investigation.md`、`design.md`、`plan.md` |
-| 作業の経過、判断の履歴 | `work-log.md`、`decisions.md` |
+| 作業の経過、判断の履歴 | `work-log.md`、`decisions.tsv`。既存の `decisions.md` 等を優先し、追記・訂正・照合はshow-me-your-workに従う |
 | 検証、レビュー、実行証拠 | `verification.md`、`review.md`、`evidence/` |
 
 空の文書をそろえない。既存PR・CI・設計資料で内容を追える場合は参照する。工程を分けるためだけに本文を複製しない。
@@ -164,6 +177,8 @@ task.mdは標準（中規模）・大規模のタスクで作成する。会話�
 候補は対象・内容・残す理由・根拠・確定度が分かるよう既存のタスク成果物に記し、専用ファイルを必須にしない。担当工程が分かれても同じ候補と根拠を引き継ぐ。
 
 現在の構成文書そのものが依頼された成果物で、system-blueprintが専門手順内でOKFへ保存する場合は例外とする。引き渡しでは返された文書・対象の版・保存と検証の結果を確認し、同じ内容を重複保存しない。
+
+コメント整理では、no-commentsが必要な知識を `code_refs`付きで保存・照合してから対象コメントを削除する。この保存も引き渡しまで延期しない。引き渡しには削除箇所と保存済みconceptの対応、照合・検証結果を渡す。
 
 | 残す内容 | 種類と新規保存先の目安 |
 | --- | --- |
